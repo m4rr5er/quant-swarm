@@ -36,3 +36,9 @@
 - Tests: `~/.venvs/quant-swarm/bin/python -m pytest -q`
 - CLI smoke: `~/.venvs/quant-swarm/bin/qs info` / `qs init-db`
 - Migrations: `alembic upgrade head` (sync driver; app runtime uses aiosqlite).
+- **M1 live smoke** (real NATS, separate processes):
+  `deploy/bin/nats-server -p 4222` (fetch via `scripts/fetch_nats.sh|ps1`),
+  then `python -m quant_swarm.scheduler | .agents.market_data | .brain |
+  .agents.execution` in four processes, and fire the loop with
+  `qs trigger collect` + `qs trigger decide`. Results land in
+  `data/quantswarm.db` and `logs/<agent>.log`.

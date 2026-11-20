@@ -84,6 +84,15 @@ class PositionRow(Base):
     updated_ts: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
+class AccountRow(Base):
+    __tablename__ = "accounts"
+
+    account_id: Mapped[str] = mapped_column(String(32), primary_key=True, default="paper")
+    cash: Mapped[float] = mapped_column(Float, default=0.0)
+    equity: Mapped[float] = mapped_column(Float, default=0.0)
+    updated_ts: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
 class AgentStateRow(Base):
     __tablename__ = "agent_state"
 

@@ -38,6 +38,14 @@ class LLMConfig(BaseModel):
 class ScheduleSettings(BaseModel):
     market_collect_cron: str = "*/5 9-15 * * 1-5"
     decide_cron: str = "30 14 * * 1-5"
+    # Optional second-level intervals; when set they override the crons
+    # (handy for dev/demo runs).
+    market_collect_interval_sec: int | None = None
+    decide_interval_sec: int | None = None
+
+
+class AccountSettings(BaseModel):
+    initial_cash: float = 1_000_000.0
 
 
 class RiskSettings(BaseModel):
@@ -61,6 +69,7 @@ class AppConfig(BaseModel):
     watchlist: list[str] = Field(default_factory=list)
     schedule: ScheduleSettings = Field(default_factory=ScheduleSettings)
     risk: RiskSettings = Field(default_factory=RiskSettings)
+    account: AccountSettings = Field(default_factory=AccountSettings)
     llm: LLMConfig = Field(default_factory=LLMConfig)
     agents: dict[str, AgentSpec] = Field(default_factory=dict)
 

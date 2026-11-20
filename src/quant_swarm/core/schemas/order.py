@@ -32,6 +32,7 @@ class TIF(StrEnum):
 class OrderIntent(BaseModel):
     schema_version: int = SCHEMA_VERSION
     order_id: str = Field(default_factory=lambda: new_id("ord"))
+    ts: datetime = Field(default_factory=utcnow)
     decision_id: str
     symbol: str
     side: Side
