@@ -11,7 +11,23 @@ from quant_swarm.core.config import load_config, load_settings
 
 app = typer.Typer(help="Quant$warm control CLI", no_args_is_help=True)
 run_app = typer.Typer(help="Run a component", no_args_is_help=True)
+trigger_app = typer.Typer(help="Manually fire a control message", no_args_is_help=True)
 app.add_typer(run_app, name="run")
+app.add_typer(trigger_app, name="trigger")
+
+
+def _factories() -> dict:
+    from quant_swarm.agents.execution.agent import ExecutionAgent
+    from quant_swarm.agents.market_data.agent import MarketDataAgent
+    from quant_swarm.brain.service import BrainService
+    from quant_swarm.scheduler.service import SchedulerService
+
+    return {
+        "scheduler": lambda b, s, c: SchedulerService(b, s, c),
+        "market_data": lambda b, s, c: MarketDataAgent(b, s, c),
+        "brain": lambda b, s, c: BrainService(b, s, c),
+        "execution": lambda b, s, c: ExecutionAgent(b, s, c),
+    }
 
 
 @app.command()
@@ -45,33 +61,74 @@ def info() -> None:
         typer.echo(f"agent {name:<14}: {state}")
 
 
-def _stub(what: str) -> None:
-    typer.echo(f"{what}: lands in M1 (contracts & infra only in M0)")
-
-
 @run_app.command("scheduler")
 def _run_scheduler() -> None:
-    _stub("scheduler")
+    from quant_swarm.core.runtime import launch
+
+    launch(_factories()["scheduler"], "scheduler")
 
 
 @run_app.command("agent")
 def _run_agent(name: str) -> None:
-    _stub(f"agent {name}")
+    from quant_swarm.core.runtime import launch
+
+    factory = _factories().get(name)
+    if factory is None:
+        raise typer.BadParameter(f"unknown agent {name!r} (have: {', '.join(_factories())})")
+    launch(factory, name)
 
 
 @run_app.command("brain")
 def _run_brain() -> None:
-    _stub("brain")
+    from quant_swarm.core.runtime import launch
+
+    launch(_factories()["brain"], "brain")
 
 
 @run_app.command("ui")
 def _run_ui() -> None:
-    _stub("ui")
+    typer.echo("ui: lands in M3")
 
 
 @run_app.command("all")
 def _run_all() -> None:
-    _stub("all-in-one")
+    """All-in-one dev mode — every enabled component as tasks on one bus."""
+    from quant_swarm.core.runtime import launch_all
+
+    f = _factories()
+    launch_all([f["scheduler"], f["market_data"], f["brain"], f["execution"]])
+
+
+async def _fire(subject: str, model) -> None:
+    from quant_swarm.core.bus import make_bus
+
+    settings = load_settings()
+    bus = make_bus(settings.bus, settings.nats_url)
+    try:
+        await bus.connect()
+        await bus.publish_model(subject, model)
+    finally:
+        await bus.close()
+
+
+@trigger_app.command("collect")
+def _trigger_collect(agent: str = "market_data") -> None:
+    """Publish qs.ctrl.collect.<agent> now."""
+    from quant_swarm.core import subjects
+    from quant_swarm.core.schemas import CtrlCommand
+
+    asyncio.run(_fire(subjects.ctrl_collect(agent), CtrlCommand(command="collect")))
+    typer.echo(f"fired collect -> {agent}")
+
+
+@trigger_app.command("decide")
+def _trigger_decide() -> None:
+    """Publish qs.ctrl.decide now."""
+    from quant_swarm.core import subjects
+    from quant_swarm.core.schemas import CtrlCommand
+
+    asyncio.run(_fire(subjects.CTRL_DECIDE, CtrlCommand(command="decide")))
+    typer.echo("fired decide")
 
 
 if __name__ == "__main__":

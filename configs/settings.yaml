@@ -7,6 +7,12 @@ watchlist:
 schedule:
   market_collect_cron: "*/5 9-15 * * 1-5"   # trading hours, weekdays
   decide_cron: "30 14 * * 1-5"
+  # Optional: second-level intervals override the crons (dev/demo runs)
+  # market_collect_interval_sec: 30
+  # decide_interval_sec: 60
+
+account:
+  initial_cash: 1000000.0     # paper account starting cash (CNY)
 
 risk:
   max_position_weight: 0.20      # single-name cap
