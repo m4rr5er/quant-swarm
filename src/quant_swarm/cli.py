@@ -93,7 +93,10 @@ def _run_brain() -> None:
 
 @run_app.command("ui")
 def _run_ui() -> None:
-    typer.echo("ui: lands in M3")
+    """PySide6 dashboard — live view of bus + operational store."""
+    from quant_swarm.ui.app import run
+
+    raise SystemExit(run())
 
 
 @run_app.command("all")

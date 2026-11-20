@@ -42,3 +42,5 @@
   .agents.execution` in four processes, and fire the loop with
   `qs trigger collect` + `qs trigger decide`. Results land in
   `data/quantswarm.db` and `logs/<agent>.log`.
+- UI tests run offscreen: `QT_QPA_PLATFORM=offscreen pytest -q`.
+  The dashboard itself (`qs run ui`) renders on Windows via WSLg.

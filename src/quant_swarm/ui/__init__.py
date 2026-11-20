@@ -1,1 +1,1 @@
-"""PySide6 desktop dashboard. Lands in M3."""
+"""PySide6 dashboard — read-only observer of the bus + operational store."""
