@@ -37,6 +37,7 @@ def _expert(name: str):
 
 
 def _factories() -> dict:
+    from quant_swarm.agents.backtester.agent import BacktesterAgent
     from quant_swarm.agents.capital_flow.agent import CapitalFlowAgent
     from quant_swarm.agents.event_monitor.agent import EventMonitorAgent
     from quant_swarm.agents.execution.agent import ExecutionAgent
@@ -53,6 +54,7 @@ def _factories() -> dict:
         "capital_flow": _named("capital_flow", CapitalFlowAgent),
         "event_monitor": _named("event_monitor", EventMonitorAgent),
         "brain": _named("brain", BrainService),
+        "backtester": _named("backtester", BacktesterAgent),
         "execution": _named("execution", ExecutionAgent),
         "chat": _named("chat", ChatService),
         "investor": _expert("investor"),

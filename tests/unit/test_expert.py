@@ -12,7 +12,8 @@ from quant_swarm.experts.base import ExpertAction, ExpertService
 
 
 class ScriptedClient:
-    """Fake LLMClient — returns queued ExpertActions."""
+    """Fake LLMClient — returns queued ExpertActions, repeating the last
+    one when the queue runs dry (nudges consume extra calls)."""
 
     def __init__(self, actions: list[ExpertAction]) -> None:
         self.actions = actions
@@ -24,7 +25,7 @@ class ScriptedClient:
     async def chat_structured(self, messages, model, **kw):
         self.calls += 1
         assert model is ExpertAction
-        return self.actions.pop(0)
+        return self.actions[min(self.calls, len(self.actions)) - 1]
 
 
 @pytest.fixture
