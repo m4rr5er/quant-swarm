@@ -44,3 +44,4 @@ agents:
     broker: paper             # paper only in MVP
     params:
       require_manual_confirm: true
+      veto_ttl_sec: 1800      # CRITICAL risk veto blocks orders this long

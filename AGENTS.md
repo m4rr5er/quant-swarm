@@ -42,5 +42,8 @@
   .agents.execution` in four processes, and fire the loop with
   `qs trigger collect` + `qs trigger decide`. Results land in
   `data/quantswarm.db` and `logs/<agent>.log`.
+- **JetStream mode**: `nats-server -js` + `QS_BUS=nats_js` — every AgentBase
+  subscription becomes a durable consumer (`<agent>-<subject>`); publishes
+  carry Nats-Msg-Id for stream dedup. `scripts/dev_all.sh` runs this by default.
 - UI tests run offscreen: `QT_QPA_PLATFORM=offscreen pytest -q`.
   The dashboard itself (`qs run ui`) renders on Windows via WSLg.

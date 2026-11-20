@@ -54,7 +54,12 @@ class LocalBus(MessageBus):
                 logger.exception("local bus handler crashed on {}", subject)
 
     async def subscribe(
-        self, subject: str, handler: Handler, *, queue_group: str | None = None
+        self,
+        subject: str,
+        handler: Handler,
+        *,
+        queue_group: str | None = None,
+        durable: str | None = None,
     ) -> Subscription:
         self._check()
         sub = _Sub(self, subject, handler, queue_group)

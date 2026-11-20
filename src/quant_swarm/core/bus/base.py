@@ -73,8 +73,15 @@ class MessageBus(abc.ABC):
 
     @abc.abstractmethod
     async def subscribe(
-        self, subject: str, handler: Handler, *, queue_group: str | None = None
-    ) -> Subscription: ...
+        self,
+        subject: str,
+        handler: Handler,
+        *,
+        queue_group: str | None = None,
+        durable: str | None = None,
+    ) -> Subscription:
+        """``durable`` names a persistent consumer on JetStream-backed buses;
+        ignored elsewhere (restart resumes where the durable left off)."""
 
     @abc.abstractmethod
     async def request(self, subject: str, data: bytes, *, timeout: float = 5.0) -> bytes: ...

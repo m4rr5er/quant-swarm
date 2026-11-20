@@ -34,6 +34,14 @@ FILLS = f"{PREFIX}.fills"
 RISK_VETO = f"{PREFIX}.risk.veto"
 
 
+def dlq(agent: str) -> str:
+    """Dead-letter queue — undeliverable/failed messages per consumer."""
+    return f"{PREFIX}.dlq.{agent}"
+
+
+DLQ_ALL = f"{PREFIX}.dlq.>"
+
+
 def heartbeat(agent: str) -> str:
     return f"{PREFIX}.heartbeat.{agent}"
 

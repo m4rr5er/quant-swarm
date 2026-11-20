@@ -6,6 +6,8 @@ know quotes itself), so MARKET orders fill at the latest seen close.
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta
+
 from loguru import logger
 from sqlalchemy import select
 
@@ -15,7 +17,15 @@ from quant_swarm.core import subjects
 from quant_swarm.core.bus.base import BusMessage, MessageBus
 from quant_swarm.core.config import AppConfig, Settings
 from quant_swarm.core.db.models import FillRow, OrderRow
-from quant_swarm.core.schemas import FillStatus, InfoCard, OrderIntent
+from quant_swarm.core.schemas import (
+    FillReport,
+    FillStatus,
+    InfoCard,
+    OrderIntent,
+    RiskEvent,
+    RiskLevel,
+)
+from quant_swarm.core.timeutils import utcnow
 
 
 class ExecutionAgent(AgentBase):
@@ -33,10 +43,15 @@ class ExecutionAgent(AgentBase):
             self.sessions, initial_cash=cfg.account.initial_cash
         )
         self._last_price: dict[str, float] = {}
+        self._veto_until: dict[str, datetime] = {}  # symbol or "*" -> veto expiry
+        self._veto_ttl = timedelta(
+            seconds=float(self.spec.params.get("veto_ttl_sec", 1800))
+        )
 
     async def on_start(self) -> None:
         await self.subscribe(subjects.ORDERS, self._on_order)
         await self.subscribe(subjects.CARDS_MARKET_ALL, self._on_card)
+        await self.subscribe(subjects.ALERTS_EVENTS, self._on_risk)
         logger.info("execution ready: broker={}", self.broker.name)
 
     async def _on_card(self, msg: BusMessage) -> None:
@@ -46,11 +61,45 @@ class ExecutionAgent(AgentBase):
             for symbol in card.symbols:
                 self._last_price[symbol] = closes[-1]
 
+    async def _on_risk(self, msg: BusMessage) -> None:
+        event = msg.envelope().unwrap(RiskEvent)
+        if event.level is not RiskLevel.CRITICAL or not event.veto:
+            return
+        until = utcnow() + self._veto_ttl
+        # Explicit symbols win; a symbol-less global event vetoes everything.
+        keys = list(event.symbols) if event.symbols else ["*"]
+        for k in keys:
+            self._veto_until[k] = until
+        self.bump("vetoes")
+        logger.bind(trace_id=msg.envelope().trace_id).warning(
+            "veto {} on {} until {} ({})", event.code, keys, until, event.message
+        )
+
+    def _vetoed(self, symbol: str) -> bool:
+        now = utcnow()
+        expired = [k for k, until in self._veto_until.items() if until <= now]
+        for k in expired:
+            del self._veto_until[k]
+        return any(k in (symbol, "*") for k in self._veto_until)
+
     async def _on_order(self, msg: BusMessage) -> None:
         env = msg.envelope()
         trace = env.trace_id
         bound = logger.bind(trace_id=trace)
         order = env.unwrap(OrderIntent)
+        if self._vetoed(order.symbol):
+            fill = FillReport(
+                order_id=order.order_id,
+                status=FillStatus.REJECTED,
+                filled_qty=0,
+                avg_price=0.0,
+                meta={"reason": "risk_veto"},
+            )
+            await self._persist(order, fill, trace)
+            await self.bus.publish_model(subjects.FILLS, fill, trace_id=trace)
+            self.bump("veto_rejects")
+            bound.warning("order {} {} x{} vetoed", order.symbol, order.side, order.qty)
+            return
         price = order.limit_price or self._last_price.get(order.symbol)
         try:
             fill = await self.broker.place(order, price)
