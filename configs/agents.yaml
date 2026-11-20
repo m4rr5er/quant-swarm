@@ -45,3 +45,21 @@ agents:
     params:
       require_manual_confirm: true
       veto_ttl_sec: 1800      # CRITICAL risk veto blocks orders this long
+
+  # --- decision-AI layer (M5): the only user-facing agents -------------
+  chat:
+    enabled: true             # router + session store: qs.chat.in -> qs.expert.*
+
+  investor:
+    enabled: true
+    llm_profile: default      # strong model recommended
+    params:
+      max_rounds: 8           # tool/acceptance loop iterations per task
+      collect_wait_sec: 25    # how long to wait for cards after dispatch
+
+  quant:
+    enabled: true
+    llm_profile: default
+    params:
+      max_rounds: 8
+      collect_wait_sec: 25

@@ -83,6 +83,7 @@ class Settings(BaseSettings):
     bus: str = "nats"  # nats | nats_js | local
     nats_url: str = "nats://127.0.0.1:4222"
     db_path: str = "data/quantswarm.db"
+    memory_dir: str = "memory"  # bounded agent memory files (runtime data)
     log_dir: str = "logs"
     log_level: str = "INFO"
     config_dir: str = str(DEFAULT_CONFIG_DIR)

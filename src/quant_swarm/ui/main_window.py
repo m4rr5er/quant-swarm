@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QMainWindow,
     QPlainTextEdit,
     QPushButton,
@@ -18,12 +19,13 @@ from PySide6.QtWidgets import (
     QTableWidget,
     QTableWidgetItem,
     QTabWidget,
+    QTextBrowser,
     QVBoxLayout,
     QWidget,
 )
 from qasync import asyncSlot
 
-from quant_swarm.core.schemas import Decision, InfoCard
+from quant_swarm.core.schemas import ChatRole, Decision, InfoCard
 
 from .store import DashboardStore
 
@@ -70,6 +72,7 @@ class MainWindow(QMainWindow):
         self.resize(1100, 720)
 
         self.tabs = QTabWidget()
+        self._build_chat_tab()
         self._build_agents_tab()
         self._build_cards_tab()
         self._build_decisions_tab()
@@ -84,6 +87,23 @@ class MainWindow(QMainWindow):
         self.refresh_all()
 
     # -- tabs ------------------------------------------------------------
+    def _build_chat_tab(self) -> None:
+        w = QWidget()
+        lay = QVBoxLayout(w)
+        self.txt_chat = QTextBrowser()
+        self.txt_chat.setOpenExternalLinks(False)
+        lay.addWidget(self.txt_chat)
+        bottom = QHBoxLayout()
+        self.edit_chat = QLineEdit()
+        self.edit_chat.setPlaceholderText("给决策 AI 下达任务，如：帮我看看茅台能不能加仓")
+        self.edit_chat.returnPressed.connect(self._send_chat)
+        btn = QPushButton("Send")
+        btn.clicked.connect(self._send_chat)
+        bottom.addWidget(self.edit_chat, 1)
+        bottom.addWidget(btn)
+        lay.addLayout(bottom)
+        self.tabs.addTab(w, "Chat")
+
     def _build_agents_tab(self) -> None:
         self.tbl_agents = QTableWidget()
         self.tabs.addTab(self.tbl_agents, "Agents")
@@ -144,10 +164,29 @@ class MainWindow(QMainWindow):
 
     # -- refresh ----------------------------------------------------------
     def refresh_all(self) -> None:
+        self.refresh_chat()
         self.refresh_agents()
         self.refresh_cards()
         self.refresh_decisions()
         self.refresh_risk()
+
+    def refresh_chat(self) -> None:
+        parts = []
+        for m in self.store.chat:
+            if m.role == ChatRole.USER:
+                who = "<b>我</b>"
+            else:
+                who = f"<b>{m.expert or 'system'}</b>"
+            refs = (
+                f'<br/><small>refs: {", ".join(m.refs)}</small>' if m.refs else ""
+            )
+            content = m.content.replace("\n", "<br/>")
+            parts.append(
+                f"<p><small>{_fmt_ts(m.ts)}</small> {who}<br/>{content}{refs}</p>"
+            )
+        self.txt_chat.setHtml("".join(parts) or "<i>no messages yet</i>")
+        bar = self.txt_chat.verticalScrollBar()
+        bar.setValue(bar.maximum())
 
     def refresh_agents(self) -> None:
         now = datetime.now(UTC)
@@ -295,3 +334,11 @@ class MainWindow(QMainWindow):
             detail = await self.store.card_detail(ref)
             if detail:
                 CardDetailDialog(detail, self).exec()
+
+    @asyncSlot()
+    async def _send_chat(self) -> None:
+        text = self.edit_chat.text().strip()
+        if not text:
+            return
+        self.edit_chat.clear()
+        await self.store.send_chat(text)

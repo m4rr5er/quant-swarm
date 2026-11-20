@@ -34,6 +34,23 @@ FILLS = f"{PREFIX}.fills"
 RISK_VETO = f"{PREFIX}.risk.veto"
 
 
+CHAT_IN = f"{PREFIX}.chat.in"
+
+
+def chat_out(channel: str) -> str:
+    return f"{PREFIX}.chat.out.{channel}"
+
+
+CHAT_OUT_ALL = f"{PREFIX}.chat.out.>"
+
+
+def expert_task(name: str) -> str:
+    return f"{PREFIX}.expert.{name}"
+
+
+EXPERT_TASK_ALL = f"{PREFIX}.expert.>"
+
+
 def dlq(agent: str) -> str:
     """Dead-letter queue — undeliverable/failed messages per consumer."""
     return f"{PREFIX}.dlq.{agent}"

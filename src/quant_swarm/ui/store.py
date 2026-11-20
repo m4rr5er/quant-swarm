@@ -22,9 +22,13 @@ from quant_swarm.core.db.models import (
     AccountRow,
     DecisionRow,
     InfoCardRow,
+    MessageRow,
     PositionRow,
 )
+from quant_swarm.core.ids import new_id
 from quant_swarm.core.schemas import (
+    ChatMessage,
+    ChatRole,
     Decision,
     FillReport,
     Heartbeat,
@@ -53,6 +57,8 @@ class DashboardStore:
         self.decisions: deque[Decision] = deque(maxlen=maxlen)
         self.fills: deque[FillReport] = deque(maxlen=maxlen)
         self.risk_events: deque[RiskEvent] = deque(maxlen=maxlen)
+        self.chat: deque[ChatMessage] = deque(maxlen=maxlen)
+        self.chat_session_id = new_id("sess")
         self._card_by_id: dict[str, InfoCard] = {}
 
         self._listeners: list[Callable[[], None]] = []
@@ -73,10 +79,12 @@ class DashboardStore:
             (subjects.DECISIONS, self._on_decision),
             (subjects.FILLS, self._on_fill),
             (subjects.ALERTS_EVENTS, self._on_risk),
+            (subjects.CHAT_OUT_ALL, self._on_chat),
             *[(s, self._on_card) for s in CARD_SUBJECTS],
         ):
             self._subs.append(await self.bus.subscribe(subject, handler))
         await self._warm_card_cache()
+        await self._warm_chat_history()
 
     async def stop(self) -> None:
         for sub in self._subs:
@@ -106,6 +114,51 @@ class DashboardStore:
     async def _on_risk(self, msg: BusMessage) -> None:
         self.risk_events.appendleft(msg.envelope().unwrap(RiskEvent))
         self._notify()
+
+    async def _on_chat(self, msg: BusMessage) -> None:
+        self.chat.append(msg.envelope().unwrap(ChatMessage))
+        self._notify()
+
+    # -- chat -------------------------------------------------------------
+    async def send_chat(self, text: str) -> None:
+        """Publish a user ChatMessage on qs.chat.in and echo it locally."""
+        msg = ChatMessage(
+            session_id=self.chat_session_id,
+            role=ChatRole.USER,
+            content=text,
+        )
+        self.chat.append(msg)
+        self._notify()
+        await self.bus.publish_model(subjects.CHAT_IN, msg)
+
+    async def _warm_chat_history(self, limit: int = 50) -> None:
+        """Load recent dashboard-channel messages for continuity."""
+        async with self.sessions() as s:
+            rows = (
+                (
+                    await s.execute(
+                        select(MessageRow)
+                        .where(MessageRow.channel == "dashboard")
+                        .order_by(MessageRow.ts.desc())
+                        .limit(limit)
+                    )
+                )
+                .scalars()
+                .all()
+            )
+        for r in reversed(rows):
+            self.chat.append(
+                ChatMessage(
+                    session_id=r.session_id,
+                    role=ChatRole(r.role),
+                    expert=r.expert,
+                    content=r.content,
+                    refs=r.refs or [],
+                    ts=r.ts,
+                )
+            )
+        if rows:
+            self._notify()
 
     # -- db reads --------------------------------------------------------
     async def _warm_card_cache(self, limit: int = 100) -> None:

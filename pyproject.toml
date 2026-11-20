@@ -50,6 +50,8 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "ASYNC", "RUF", "W"]
+# User-facing text is Chinese; fullwidth punctuation is correct there.
+ignore = ["RUF001", "RUF002", "RUF003"]
 
 [tool.ruff.lint.per-file-ignores]
 # `timeout` is the wire-level contract (mirrors nats-py's request API),

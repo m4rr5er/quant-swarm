@@ -19,6 +19,9 @@ PIDS=$!
 "$PY" -m quant_swarm.agents.event_monitor &   PIDS="$PIDS $!"
 "$PY" -m quant_swarm.brain &              PIDS="$PIDS $!"
 "$PY" -m quant_swarm.agents.execution &   PIDS="$PIDS $!"
+"$PY" -m quant_swarm.chat &               PIDS="$PIDS $!"
+"$PY" -m quant_swarm.experts investor &   PIDS="$PIDS $!"
+"$PY" -m quant_swarm.experts quant &      PIDS="$PIDS $!"
 
 echo "started pids: $PIDS (QS_BUS=$QS_BUS)"
 echo "try:  qs trigger collect --agent market_data && qs trigger decide && qs run ui"

@@ -34,5 +34,9 @@ async def init_db(db_path: str) -> None:
         async with engine.begin() as conn:
             await conn.exec_driver_sql("PRAGMA journal_mode=WAL")
             await conn.run_sync(Base.metadata.create_all)
+            await conn.exec_driver_sql(
+                "CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts5("
+                "content, session_id UNINDEXED, expert UNINDEXED)"
+            )
     finally:
         await engine.dispose()
