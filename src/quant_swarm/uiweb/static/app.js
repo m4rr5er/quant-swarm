@@ -87,7 +87,12 @@ async function sendChat() {
   refresh();
 }
 $("#chat-send").addEventListener("click", sendChat);
-$("#chat-input").addEventListener("keydown", (e) => { if (e.key === "Enter") sendChat(); });
+$("#chat-input").addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.isComposing || e.keyCode === 229) return;   // CJK IME composition Enter confirms text, not send
+  e.preventDefault();
+  if (!e.repeat) sendChat();
+});
 
 /* ── tables ── */
 function tbl(el, heads, rows, opts = {}) {
