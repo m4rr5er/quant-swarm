@@ -56,6 +56,9 @@ qs promote quant              # promote a learner skill proposal
 
 **Telegram**: `@BotFather` → `/newbot` → put the token in `.env` as `QS_TG_TOKEN` → set `im_telegram.enabled: true` in `configs/agents.yaml` — `dev_all.sh` picks it up automatically.
 
+**WSLg CJK fonts**: if the dashboard shows tofu boxes for Chinese, link Windows fonts once:
+`mkdir -p ~/.local/share/fonts && ln -s /mnt/c/Windows/Fonts ~/.local/share/fonts/win && fc-cache -f`
+
 ## Tech stack
 
 | Layer | Choice |

@@ -17,13 +17,19 @@ def run() -> int:
     setup_logging("ui", settings.log_dir, settings.log_level)
 
     import qasync
+    from PySide6.QtGui import QFont
     from PySide6.QtWidgets import QApplication
 
     from .main_window import MainWindow
     from .store import DashboardStore
+    from .theme import FONT_FAMILIES, STYLE
 
     app = QApplication(sys.argv[:1])
     app.setApplicationName("Quant$warm")
+    font = QFont()
+    font.setFamilies(FONT_FAMILIES)
+    app.setFont(font)
+    app.setStyleSheet(STYLE)
     loop = qasync.QEventLoop(app)
     asyncio.set_event_loop(loop)
 
