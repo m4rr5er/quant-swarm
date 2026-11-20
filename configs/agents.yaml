@@ -1,0 +1,39 @@
+# Per-agent switches & params. Each agent is an independent process;
+# `llm_profile` references a named profile in settings.yaml -> llm.profiles.
+
+agents:
+  market_data:
+    enabled: true
+    provider: mock            # mock | akshare | tushare
+    params:
+      bar_interval: "1d"
+      seed: 42
+
+  fundamentals:
+    enabled: false
+    llm_profile: default      # NLP sentiment scoring model
+
+  capital_flow:
+    enabled: false
+    provider: akshare
+
+  event_monitor:
+    enabled: false
+    params:
+      spike_pct: 5.0
+      scan_interval_sec: 30
+
+  risk_review:
+    enabled: false
+
+  brain:
+    enabled: true
+    llm_profile: default
+    params:
+      prompt_version: "v1"
+
+  execution:
+    enabled: true
+    broker: paper             # paper only in MVP
+    params:
+      require_manual_confirm: true

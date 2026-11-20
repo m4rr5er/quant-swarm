@@ -30,5 +30,9 @@
 
 ## Verification
 
-- No build/test toolchain yet (docs-only phase). M0 adds pytest/ruff — run
-  `ruff check src tests` and `pytest` once the scaffold exists.
+- Dev env lives in WSL: `~/.venvs/quant-swarm` (uv-managed venv, project
+  installed editable with `[dev]` extras; `uv` at `~/.local/bin/uv`).
+- Lint (whole repo, incl. alembic): `~/.venvs/quant-swarm/bin/ruff check .`
+- Tests: `~/.venvs/quant-swarm/bin/python -m pytest -q`
+- CLI smoke: `~/.venvs/quant-swarm/bin/qs info` / `qs init-db`
+- Migrations: `alembic upgrade head` (sync driver; app runtime uses aiosqlite).
