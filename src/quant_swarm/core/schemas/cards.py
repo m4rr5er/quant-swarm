@@ -17,6 +17,7 @@ class CardKind(StrEnum):
     FUNDAMENTAL = "fundamental"
     CAPITAL = "capital"
     EVENT = "event"
+    BACKTEST = "backtest"
 
 
 class InfoCard(BaseModel):

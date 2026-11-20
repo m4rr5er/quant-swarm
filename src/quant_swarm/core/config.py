@@ -93,12 +93,28 @@ def load_settings() -> Settings:
     return Settings()
 
 
+def _deep_merge(base: dict, overlay: dict) -> dict:
+    """Recursive dict merge — ``local.yaml`` overrides leaves, keeps siblings."""
+    for k, v in overlay.items():
+        if isinstance(v, dict) and isinstance(base.get(k), dict):
+            _deep_merge(base[k], v)
+        else:
+            base[k] = v
+    return base
+
+
 def load_config(config_dir: str | Path | None = None) -> AppConfig:
-    """Merge configs/settings.yaml + configs/agents.yaml into AppConfig."""
+    """Merge configs/*.yaml into AppConfig.
+
+    ``settings.yaml`` and ``agents.yaml`` ship with the repo;
+    ``local.yaml`` (gitignored) overlays them last for machine-local
+    values — private endpoints, sandboxed params — and must never hold
+    secrets (keys always come from env vars via ``api_key_env``).
+    """
     cfg_dir = Path(config_dir) if config_dir else DEFAULT_CONFIG_DIR
     merged: dict[str, Any] = {}
-    for name in ("settings.yaml", "agents.yaml"):
+    for name in ("settings.yaml", "agents.yaml", "local.yaml"):
         path = cfg_dir / name
         if path.exists():
-            merged.update(yaml.safe_load(path.read_text(encoding="utf-8")) or {})
+            _deep_merge(merged, yaml.safe_load(path.read_text(encoding="utf-8")) or {})
     return AppConfig.model_validate(merged)

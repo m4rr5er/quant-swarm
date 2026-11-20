@@ -18,7 +18,7 @@ from datetime import timedelta
 from typing import Any, Literal
 
 from loguru import logger
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import desc, select
 
 from quant_swarm.agents.base import AgentBase
@@ -54,19 +54,51 @@ TOOL_SPEC = """\
 - read_cards(symbols=[], kinds=[], limit=10)   读最新信息卡。kinds ∈ MARKET | FUNDAMENTAL | CAPITAL
 - read_portfolio()                       持仓、现金/权益、最近成交
 - read_risk_events(limit=10)             近期风控/异动事件
+- run_backtest(symbol, strategy="ma_cross", params={"short":5,"long":20})  派回测任务，返回绩效统计
 - session_search(query)                  全文检索历史会话
 - memory(action, title, body)            维护你的工作笔记。action ∈ list | set | remove
 验收纪律：回答前核对 ①数据是否当日/新鲜 ②覆盖任务要求的标的 ③多来源是否一致。
-缺数据先派采集再答；采集仍无数据要在回答中明说，不得编造。"""
+涉及具体标的/行情/持仓/策略数据的任务，必须先调用工具获取数据再回答；
+除非问题是纯概念讨论，否则"取不到数据"不可作为不调用工具的理由。"""
 
 
 class ExpertAction(BaseModel):
-    """LLM output contract — one tool call or the final reply."""
+    """LLM output contract — one tool call or the final reply.
+
+    Field/value aliases are normalised before validation: relay models
+    routinely write ``answer``/``final``/``arguments``/``text`` instead
+    of the literal contract — that drift is not a parse failure.
+    """
+
+    model_config = {"populate_by_name": True}
 
     type: Literal["tool", "reply"]
     tool: str | None = None
     args: dict[str, Any] = Field(default_factory=dict)
     content: str = ""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _normalise(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        d = dict(data)
+        for canon, aliases in (
+            ("tool", ("name", "tool_name", "function", "action")),
+            ("args", ("arguments", "params", "parameters")),
+            ("content", ("text", "message", "answer", "response")),
+        ):
+            for a in aliases:
+                if canon not in d and a in d:
+                    d[canon] = d.pop(a)
+        t = str(d.get("type", "")).lower()
+        if t in ("answer", "final", "response", "respond", "text", "final_answer"):
+            d["type"] = "reply"
+        elif t in ("call", "tool_call", "use_tool", "function", "action"):
+            d["type"] = "tool"
+        if "type" not in d:
+            d["type"] = "reply" if d.get("content") else "tool"
+        return d
 
 
 class ExpertService(AgentBase):
@@ -94,6 +126,7 @@ class ExpertService(AgentBase):
             "read_cards": self._tool_read_cards,
             "read_portfolio": self._tool_read_portfolio,
             "read_risk_events": self._tool_risk_events,
+            "run_backtest": self._tool_run_backtest,
             "session_search": self._tool_session_search,
             "memory": self._tool_memory,
         }
@@ -149,12 +182,32 @@ class ExpertService(AgentBase):
         max_rounds = int(self.spec.params.get("max_rounds", 8))
         messages = self._messages(task)
         refs: list[str] = []
+        tools_used = 0
+        nudged = False
         for _ in range(max_rounds):
-            action = await self._client.chat_structured(messages, ExpertAction)
+            action = await self._client.chat_structured(messages, ExpertAction, retries=2)
             if action.type == "reply" and action.content.strip():
+                if tools_used == 0 and not nudged:
+                    # Acceptance floor: data tasks need at least one tool call.
+                    nudged = True
+                    messages.append(
+                        {"role": "assistant", "content": action.model_dump_json()}
+                    )
+                    messages.append(
+                        {
+                            "role": "user",
+                            "content": (
+                                "【系统】你尚未调用任何工具。任务若涉及具体标的/行情/"
+                                "持仓/策略，请先用工具获取数据再回答；纯概念问题或确认"
+                                "数据确实不可得时，可直接答复。"
+                            ),
+                        }
+                    )
+                    continue
                 self.bump("replies")
                 return action.content.strip(), refs
             result = await self._call_tool(action, refs, bound)
+            tools_used += 1
             messages.append({"role": "assistant", "content": action.model_dump_json()})
             messages.append({"role": "user", "content": result})
         self.bump("round_overflow")
@@ -166,10 +219,16 @@ class ExpertService(AgentBase):
             f"# 用户画像\n{self.user_memory.load() or '（暂无）'}\n\n"
             f"# 你的工作笔记\n{self.memory.load() or '（暂无）'}\n\n"
             f"# 团队与工具\n{TOOL_SPEC}\n\n"
-            "始终输出一个 JSON 对象："
-            '{"type":"tool","tool":"<名>","args":{...}} 或 '
-            '{"type":"reply","content":"<给用户的回答>"}。'
-            "回答用中文 markdown，先结论后依据。"
+            "# 工作方式（重要）\n"
+            "你处在一个**真实的工具循环**中，不是聊天模拟：你输出的 tool JSON 会被编排器"
+            "真正执行，执行结果作为下一条 user 消息返回给你；你再据此输出下一个动作。"
+            "因此工具是真实可用的——不要说'没有工具'或'无法获取数据'，先调用工具验证。\n\n"
+            "# 输出契约（最高优先级，覆盖一切风格要求）\n"
+            "你的每一次回复必须且只能是**一个 JSON 对象**，不得包含任何其他文字：\n"
+            '- 调工具: {"type":"tool","tool":"<工具名>","args":{...}}\n'
+            '- 给用户最终回答: {"type":"reply","content":"<markdown 回答，先结论后依据>"}\n'
+            "示例: {\"type\":\"tool\",\"tool\":\"read_portfolio\",\"args\":{}}\n"
+            "回答本身用中文 markdown 写在 content 字段里。切记：JSON 之外输出任何内容都是错误。"
         )
         messages = [{"role": "system", "content": system}]
         for h in task.history[-20:]:
@@ -206,7 +265,10 @@ class ExpertService(AgentBase):
             content=content,
             refs=refs or [],
         )
-        await self.bus.publish_model(subjects.chat_out(task.channel), reply, trace_id=trace)
+        # co-sign opinions go to the internal cosign channel; normal
+        # answers go to the user-facing out channel.
+        subject = task.context.get("reply_subject") or subjects.chat_out(task.channel)
+        await self.bus.publish_model(subject, reply, trace_id=trace)
 
     # -- tools -----------------------------------------------------------
     async def _tool_dispatch_collect(self, agent: str) -> dict:
@@ -225,7 +287,9 @@ class ExpertService(AgentBase):
             "refs": [r["card_id"] for r in rows],
         }
 
-    async def _wait_cards(self, agent: str, t0, wait_sec: float) -> list[dict]:
+    async def _wait_cards(
+        self, agent: str, t0, wait_sec: float, include_payload: bool = False
+    ) -> list[dict]:
         deadline = wait_sec
         while True:
             async with self.sessions() as s:
@@ -248,6 +312,7 @@ class ExpertService(AgentBase):
                         "symbols": r.symbols,
                         "asof": r.asof.isoformat(),
                         "confidence": r.confidence,
+                        **({"payload": r.payload} if include_payload else {}),
                     }
                     for r in rows
                 ]
@@ -364,6 +429,23 @@ class ExpertService(AgentBase):
             if e.ts >= cutoff
         ]
         return {"risk_events": events[-limit:]}
+
+    async def _tool_run_backtest(
+        self, symbol: str, strategy: str = "ma_cross", params: dict | None = None
+    ) -> dict:
+        t0 = utcnow()
+        await self.bus.publish_model(
+            subjects.CTRL_BACKTEST,
+            CtrlCommand(
+                command="backtest",
+                args={"symbol": symbol, "strategy": strategy, "params": params or {}},
+            ),
+        )
+        wait = float(self.spec.params.get("collect_wait_sec", 25))
+        rows = await self._wait_cards("backtester", t0, wait, include_payload=True)
+        if not rows:
+            return {"error": f"backtester returned nothing for {symbol} within {wait}s"}
+        return {"backtests": rows, "refs": [r["card_id"] for r in rows]}
 
     async def _tool_session_search(self, query: str) -> dict:
         """Substring search over session history — CJK-safe (FTS5's default

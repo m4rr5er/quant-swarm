@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 from typing import TypeVar
 
 from loguru import logger
@@ -23,6 +24,24 @@ T = TypeVar("T", bound=BaseModel)
 
 class LLMConfigError(RuntimeError):
     pass
+
+
+def _lookup_key(var: str) -> str:
+    """Read an api key from the process env, then the repo ``.env`` file.
+
+    ``Settings`` only binds ``QS_*`` vars — a bare provider key like
+    ``LLM_API_KEY_DEFAULT`` in .env would never reach ``os.environ``.
+    """
+    key = os.environ.get(var, "")
+    if key:
+        return key
+    env_file = Path(".env")
+    if env_file.exists():
+        for line in env_file.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line.startswith(f"{var}="):
+                return line.split("=", 1)[1].strip().strip('"').strip("'")
+    return ""
 
 
 class LLMParseError(RuntimeError):
@@ -45,7 +64,7 @@ def _extract_json(text: str) -> str:
 
 class LLMClient:
     def __init__(self, profile: LLMProfile, *, api_key: str | None = None) -> None:
-        key = api_key or os.environ.get(profile.api_key_env, "")
+        key = api_key or _lookup_key(profile.api_key_env)
         if not key:
             raise LLMConfigError(
                 f"no api key for profile (model={profile.model!r}): set env {profile.api_key_env}"
@@ -56,6 +75,30 @@ class LLMClient:
             base_url=profile.base_url, api_key=key, timeout=profile.timeout_sec
         )
 
+    @staticmethod
+    def _fold_system(messages: list[dict]) -> list[dict]:
+        """Merge system turns into the first user turn.
+
+        Some relay/gateway endpoints silently drop ``system`` messages;
+        for those, set ``extra.merge_system_into_user: true`` on the
+        profile — the instructions then ride inside the first user
+        message and actually reach the model.
+        """
+        sys_text = "\n\n".join(
+            m["content"] for m in messages if m["role"] == "system"
+        )
+        if not sys_text:
+            return messages
+        out = [m for m in messages if m["role"] != "system"]
+        for i, m in enumerate(out):
+            if m["role"] == "user":
+                out[i] = {
+                    **m,
+                    "content": f"[系统指令]\n{sys_text}\n\n[用户消息]\n{m['content']}",
+                }
+                return out
+        return [{"role": "user", "content": sys_text}, *out]
+
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(min=1, max=10),
@@ -63,11 +106,19 @@ class LLMClient:
         reraise=True,
     )
     async def _create(self, messages: list[dict], **kw):
+        # internal client-side flags never reach the API payload
+        extra = {
+            k: v
+            for k, v in self.profile.extra.items()
+            if k != "merge_system_into_user"
+        }
+        if self.profile.extra.get("merge_system_into_user"):
+            messages = self._fold_system(messages)
         params = {
             "model": self.profile.model,
             "messages": messages,
             "temperature": self.profile.temperature,
-            **self.profile.extra,
+            **extra,
             **kw,
         }
         if self.profile.max_tokens is not None:

@@ -17,6 +17,7 @@ from quant_swarm.agents.base import AgentBase
 from quant_swarm.core import subjects
 from quant_swarm.core.bus.base import BusMessage
 from quant_swarm.core.db.models import MessageRow, SessionRow
+from quant_swarm.core.ids import new_id
 from quant_swarm.core.schemas import ChatMessage, ExpertTask
 from quant_swarm.core.timeutils import utcnow
 
@@ -33,10 +34,16 @@ _FTS_INSERT = text(
 class ChatService(AgentBase):
     name = "chat"
 
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        # cosign group -> {primary, session, channel, task, opinions, trace}
+        self._cosign: dict[str, dict] = {}
+
     async def on_start(self) -> None:
         await self.subscribe(subjects.CHAT_IN, self._on_user_msg)
         await self.subscribe(subjects.CHAT_OUT_ALL, self._on_expert_msg)
-        logger.info("chat ready (router + session store)")
+        await self.subscribe(subjects.COSIGN_ALL, self._on_cosign)
+        logger.info("chat ready (router + session store + co-signing)")
 
     async def _on_user_msg(self, msg: BusMessage) -> None:
         env = msg.envelope()
@@ -44,6 +51,9 @@ class ChatService(AgentBase):
         await self._persist(chat, env.trace_id)
         route = classify(chat.content)
         self.bump("routed")
+        if route.compound:
+            await self._dispatch_cosign(chat, env.trace_id, route)
+            return
         history = await self._history(chat.session_id)
         task = ExpertTask(
             session_id=chat.session_id,
@@ -69,6 +79,80 @@ class ChatService(AgentBase):
             route.score_investor,
             route.score_quant,
         )
+
+    # -- co-signing ------------------------------------------------------
+    async def _dispatch_cosign(self, chat: ChatMessage, trace: str, route) -> None:
+        """Compound task -> both experts independently, then synthesize."""
+        group = new_id("cg")
+        history = await self._history(chat.session_id)
+        self._cosign[group] = {
+            "primary": route.expert,
+            "session": chat.session_id,
+            "channel": chat.channel,
+            "task": chat.content,
+            "history": history,
+            "opinions": {},
+            "trace": trace,
+        }
+        for name in ("investor", "quant"):
+            task = ExpertTask(
+                session_id=chat.session_id,
+                channel=chat.channel,
+                task=chat.content,
+                history=history,
+                context={
+                    "cosign_group": group,
+                    "cosign_role": "opinion",
+                    "primary": route.expert,
+                    "reply_subject": subjects.cosign(group, name),
+                },
+            )
+            await self.bus.publish_model(subjects.expert_task(name), task, trace_id=trace)
+        logger.info("cosign {} -> investor+quant (primary={})", group, route.expert)
+        self.bump("cosign")
+
+    async def _on_cosign(self, msg: BusMessage) -> None:
+        """Collect cosign opinions; when both experts have spoken, synthesize."""
+        env = msg.envelope()
+        try:
+            chat = env.unwrap(ChatMessage)
+        except Exception:
+            return
+        # qs.cosign.<group>.<expert>
+        parts = msg.subject.split(".")
+        if len(parts) < 4 or parts[2] not in self._cosign:
+            return
+        group = self._cosign[parts[2]]
+        expert = parts[3]
+        group["opinions"][expert] = chat.content
+        await self._persist(chat, env.trace_id)  # keep opinions in history
+        self.bump("cosign_opinions")
+        if len(group["opinions"]) >= 2:
+            await self._synthesize(parts[2], group)
+
+    async def _synthesize(self, group_id: str, group: dict) -> None:
+        """Primary expert merges both opinions into the single final answer."""
+        del self._cosign[group_id]
+        opinions = "\n\n".join(
+            f"【{name} 专家意见】\n{txt}" for name, txt in group["opinions"].items()
+        )
+        task = ExpertTask(
+            session_id=group["session"],
+            channel=group["channel"],
+            task=(
+                f"这是会签任务。用户问题：『{group['task']}』\n\n"
+                f"{opinions}\n\n"
+                "请合成一份给用户的最终回答（中文 markdown）：保留双方共识，"
+                "分歧点显式标注，先给结论再给依据。"
+            ),
+            history=group["history"],
+            context={"cosign_role": "synthesis"},
+        )
+        await self.bus.publish_model(
+            subjects.expert_task(group["primary"]), task, trace_id=group["trace"]
+        )
+        logger.info("cosign {} synthesized by {}", group_id, group["primary"])
+        self.bump("cosign_synthesized")
 
     async def _on_expert_msg(self, msg: BusMessage) -> None:
         env = msg.envelope()

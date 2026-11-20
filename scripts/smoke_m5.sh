@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
-# M5a smoke: chat router + two expert processes against nats_js.
+# M5 smoke: chat router + experts + workers needed for live tool calls.
 set -u
 cd "$(dirname "$0")/.."
 PY="${PY:-$HOME/.venvs/quant-swarm/bin/python}"
 export QS_BUS="${QS_BUS:-nats_js}"
 
+mkdir -p logs
 setsid "$PY" -m quant_swarm.chat > logs/chat.log 2>&1 < /dev/null &
 setsid "$PY" -m quant_swarm.experts investor > logs/investor.log 2>&1 < /dev/null &
 setsid "$PY" -m quant_swarm.experts quant > logs/quant.log 2>&1 < /dev/null &
+setsid "$PY" -m quant_swarm.agents.market_data > logs/market_data.log 2>&1 < /dev/null &
+setsid "$PY" -m quant_swarm.agents.backtester > logs/backtester.log 2>&1 < /dev/null &
 sleep 4
-tail -n 3 logs/chat.log logs/investor.log logs/quant.log
+tail -n 2 logs/chat.log logs/investor.log logs/quant.log logs/backtester.log

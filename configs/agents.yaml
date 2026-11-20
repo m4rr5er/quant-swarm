@@ -39,6 +39,13 @@ agents:
       use_llm: true           # false -> MACrossPolicy only
       prompt_version: "decision_v1"
 
+  backtester:
+    enabled: true
+    provider: akshare         # mock | akshare
+    params:
+      n_bars: 250             # ~1y of daily bars per replay
+      ttl_sec: 86400
+
   execution:
     enabled: true
     broker: paper             # paper only in MVP
