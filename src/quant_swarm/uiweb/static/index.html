@@ -11,7 +11,6 @@
 <body>
 <div id="app">
   <nav id="rail">
-    <div class="logo">Q$</div>
     <button class="nav on" data-page="chat"><i class="ti ti-message-2"></i><span>对话</span></button>
     <button class="nav" data-page="agents"><i class="ti ti-cpu"></i><span>组件</span></button>
     <button class="nav" data-page="cards"><i class="ti ti-stack-2"></i><span>卡片</span></button>
@@ -23,7 +22,6 @@
 
   <main>
     <header id="topbar">
-      <span class="navbar-brand">Quant<b>$warm</b></span>
       <span id="status" class="badge"><i class="status-dot"></i>connecting…</span>
       <span class="spacer"></span>
       <span id="clock" class="clock"></span>
@@ -33,7 +31,7 @@
       <div id="chat-scroll"><div id="chat-list"></div></div>
       <div id="composer">
         <div class="composer-inner">
-          <input id="chat-input" class="form-control" placeholder="给决策 AI 下达任务，如：茅台现在能加仓吗 / 回测一下双均线" autocomplete="off">
+          <textarea id="chat-input" class="form-control" rows="1" placeholder="给决策 AI 下达任务，如：茅台现在能加仓吗 / 回测一下双均线"></textarea>
           <button id="chat-send" class="btn btn-primary"><i class="ti ti-send"></i></button>
         </div>
       </div>

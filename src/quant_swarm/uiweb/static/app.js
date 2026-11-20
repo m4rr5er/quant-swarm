@@ -7,6 +7,8 @@ let SNAP = null;
 let PENDING = false;          // waiting for an expert reply
 let pendingBase = 0;          // expert msg count when the send happened
 let filesCache = null;
+let prevMsgCount = 0;         // chat rows already on screen (for entry animation)
+const kpiPrev = {};           // last rendered KPI values (count-up source)
 
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -45,8 +47,11 @@ const expertMsgs = () => (SNAP?.chat || []).filter((m) => m.role === "expert");
 function renderChat() {
   const list = $("#chat-list");
   const msgs = SNAP.chat || [];
-  let html = msgs.map((m) => {
+  const unchanged = msgs.length === prevMsgCount && !PENDING && !list.dataset.pending;
+  if (unchanged && prevMsgCount > 0) return;
+  let html = msgs.map((m, i) => {
     const user = m.role === "user";
+    const isNew = i >= prevMsgCount;
     const who = user ? "我" : (m.expert || "system");
     const av = user
       ? `<div class="avatar av-user">我</div>`
@@ -55,7 +60,7 @@ function renderChat() {
       ? `<div class="refs">refs: ${m.refs.map((r) =>
           `<a href="#" class="badge bg-azure-lt cardref" data-id="${esc(r)}">${esc(String(r).slice(0, 14))}…</a>`).join(" ")}</div>`
       : "";
-    return `<div class="msg ${user ? "user" : "expert"}">${av}
+    return `<div class="msg ${user ? "user" : "expert"}${isNew ? " new" : ""}">${av}
       <div class="msg-col"><div class="meta"><span class="who ${user ? "c-user" : EXPERT_CLASS[m.expert] || "dim"}">${esc(who)}</span><span>${fmtT(m.ts)}</span></div>
       <div class="bubble">${md(m.content || "")}${refs}</div></div></div>`;
   }).join("");
@@ -69,6 +74,8 @@ function renderChat() {
   list.innerHTML = html ||
     `<div class="text-secondary text-center py-5">开始对话 — 例如「现在持仓情况」「回测一下茅台的双均线」</div>`;
   if (nearBottom) sc.scrollTop = sc.scrollHeight;
+  list.dataset.pending = PENDING ? "1" : "";
+  prevMsgCount = msgs.length;
 }
 
 async function sendChat() {
@@ -76,6 +83,7 @@ async function sendChat() {
   const text = inp.value.trim();
   if (!text) return;
   inp.value = "";
+  inp.style.height = "auto";
   pendingBase = expertMsgs().length;
   PENDING = true;
   renderChat();
@@ -87,7 +95,12 @@ async function sendChat() {
   refresh();
 }
 $("#chat-send").addEventListener("click", sendChat);
-$("#chat-input").addEventListener("keydown", (e) => {
+const chatInput = $("#chat-input");
+chatInput.addEventListener("input", () => {
+  chatInput.style.height = "auto";
+  chatInput.style.height = Math.min(chatInput.scrollHeight, 132) + "px";
+});
+chatInput.addEventListener("keydown", (e) => {
   if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
   if (e.isComposing || e.keyCode === 229) return;   // CJK IME composition Enter confirms text, not send
   e.preventDefault();
@@ -151,21 +164,27 @@ function render() {
   (s.positions || []).forEach((p) => {
     if (p.qty) unreal += p.qty * ((last[p.symbol] ?? p.avg_cost) - p.avg_cost);
   });
-  $("#kpis").innerHTML = [
-    ["现金", num(acc?.cash, 0), ""], ["总资产", num(equity, 0), ""],
-    ["浮动盈亏", (unreal >= 0 ? "+" : "") + num(unreal, 0), unreal >= 0 ? "text-green" : "text-red"],
+  const kpis = [
+    ["现金", acc?.cash, ""], ["总资产", equity, ""],
+    ["浮动盈亏", unreal, unreal >= 0 ? "text-green" : "text-red", true],
     ["更新时间", fmtT(acc?.updated_ts), ""],
-  ].map(([k, v, c]) =>
-    `<div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body">
-     <div class="subheader">${k}</div><div class="h1 mb-0 ${c}">${v}</div></div></div></div>`).join("");
-  tbl($("#tbl-pos"), ["标的", "数量", "成本", "现价", "市值", "浮动盈亏"],
+  ];
+  $("#kpis").innerHTML = kpis.map(([k, v, c, sign], i) => {
+    const shown = typeof v === "number" ? ((sign && v >= 0 ? "+" : "") + num(v, 0)) : v;
+    return `<div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body">
+     <div class="subheader">${k}</div><div class="h1 mb-0 ${c}" data-kpi="${k}" data-v="${typeof v === "number" ? v : ""}">${shown ?? "-"}</div></div></div></div>`;
+  }).join("");
+  animateKpis();
+  tbl($("#tbl-pos"), ["标的", "数量", "成本", "现价", "走势", "市值", "浮动盈亏"],
     (s.positions || []).filter((p) => p.qty).map((p) => {
       const px = last[p.symbol] ?? p.avg_cost, pnl = p.qty * (px - p.avg_cost);
       return [`<td>${esc(p.symbol)}</td>`, `<td class="mono">${num(p.qty, 0)}</td>`,
         `<td class="mono">${num(p.avg_cost)}</td>`, `<td class="mono">${num(px)}</td>`,
+        `<td><canvas class="spark" data-sym="${esc(p.symbol)}"></canvas></td>`,
         `<td class="mono">${num(p.qty * px, 0)}</td>`,
         `<td class="mono ${pnl >= 0 ? "text-green" : "text-red"}">${pnl >= 0 ? "+" : ""}${num(pnl, 0)}</td>`];
     }));
+  drawSparks(cards);
   tbl($("#tbl-fills"), ["时间", "订单", "状态", "数量", "价格", "通道"],
     (s.fills || []).map((f) => [
       `<td class="mono dim">${fmtT(f.ts)}</td>`, `<td class="mono dim">${esc(String(f.order_id || "").slice(-8))}</td>`,
@@ -199,6 +218,58 @@ function lastCloses(cards) {
     (c.symbols || []).forEach((sym) => { if (closes.length && !(sym in out)) out[sym] = closes[closes.length - 1]; });
   }
   return out;
+}
+
+/* ── animated KPI count-up + TradingView-style sparklines ── */
+function animateKpis() {
+  const DUR = 550;
+  $$("[data-kpi]").forEach((el) => {
+    const to = parseFloat(el.dataset.v);
+    if (isNaN(to)) return;
+    const from = kpiPrev[el.dataset.kpi] ?? 0;
+    kpiPrev[el.dataset.kpi] = to;
+    if (from === to) return;
+    const t0 = performance.now();
+    const signed = el.textContent.trim().startsWith("+") || from === to;
+    const tick = (t) => {
+      const p = Math.min(1, (t - t0) / DUR), e = 1 - Math.pow(1 - p, 3);
+      const v = from + (to - from) * e;
+      el.textContent = (v >= 0 && el.dataset.kpi === "浮动盈亏" ? "+" : "") + num(v, 0);
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+}
+
+function drawSparks(cards) {
+  $$(".spark").forEach((cv) => {
+    const sym = cv.dataset.sym;
+    let series = null;
+    for (const c of cards) {
+      if (String(c.kind).split(".").pop() !== "market") continue;
+      if (!(c.symbols || []).includes(sym)) continue;
+      const cl = (c.payload || {}).closes;
+      if (cl && cl.length > 1) { series = cl; break; }
+    }
+    if (!series) return;
+    const dpr = window.devicePixelRatio || 1, w = 76, h = 24;
+    cv.width = w * dpr; cv.height = h * dpr;
+    const x = cv.getContext("2d");
+    x.scale(dpr, dpr);
+    const min = Math.min(...series), max = Math.max(...series), rg = (max - min) || 1;
+    const up = series[series.length - 1] >= series[0];
+    const col = up ? "#22C55E" : "#EF4444";
+    x.beginPath();
+    series.forEach((v, i) => {
+      const px = 2 + (i / (series.length - 1)) * (w - 4);
+      const py = h - 3 - ((v - min) / rg) * (h - 6);
+      i ? x.lineTo(px, py) : x.moveTo(px, py);
+    });
+    x.strokeStyle = col; x.lineWidth = 1.4; x.lineJoin = "round"; x.stroke();
+    x.lineTo(w - 2, h); x.lineTo(2, h); x.closePath();
+    x.fillStyle = up ? "rgba(34,197,94,.10)" : "rgba(239,68,68,.10)";
+    x.fill();
+  });
 }
 
 /* ── card modal / files ── */
