@@ -217,3 +217,69 @@ tr{transition:background .15s}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
+
+/* ── terminal (TradingView-style) ── */
+#page-terminal{flex-direction:column}
+#term-toolbar{
+  flex:none;display:flex;align-items:center;gap:16px;padding:7px 14px;
+  border-bottom:1px solid var(--tblr-border-color);background:var(--qs-card);
+}
+#sym-chips{display:flex;gap:4px}
+.sym-chip{
+  border:1px solid transparent;background:transparent;border-radius:6px;
+  padding:4px 10px;font-family:var(--display);font-weight:500;font-size:12.5px;
+  color:var(--qs-muted-fg);cursor:pointer;transition:background .15s,color .15s;
+}
+.sym-chip:hover{background:var(--qs-muted);color:var(--qs-fg)}
+.sym-chip.on{background:var(--qs-muted);color:var(--qs-fg);border-color:var(--qs-border)}
+#sym-quote{display:flex;align-items:baseline;gap:10px}
+.q-px{font-family:var(--display);font-weight:700;font-size:19px;font-variant-numeric:tabular-nums}
+#q-chg{font-family:var(--display);font-weight:500;font-size:13px;font-variant-numeric:tabular-nums}
+.q-up{color:#EF4444} .q-down{color:#22C55E}   /* A股约定：红涨绿跌 */
+#q-asof,#q-legend{font-size:11px}
+#term-main{flex:1;display:flex;min-height:0}
+#chart-wrap{flex:1;position:relative;min-width:0;background:#010410}
+#tvchart{position:absolute;inset:0}
+#chart-empty{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:13px;pointer-events:none;
+}
+#term-side{
+  width:340px;flex:none;display:flex;flex-direction:column;
+  border-left:1px solid var(--tblr-border-color);background:var(--qs-card);
+}
+.side-tabs{display:flex;border-bottom:1px solid var(--tblr-border-color)}
+.stab{
+  flex:1;border:0;background:transparent;padding:9px 0 8px;cursor:pointer;
+  color:var(--qs-muted-fg);font-size:12px;font-family:inherit;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  border-bottom:2px solid transparent;transition:color .15s,border-color .15s;
+}
+.stab:hover{color:var(--qs-fg)}
+.stab.on{color:var(--qs-accent);border-bottom-color:var(--qs-accent)}
+.side-panel{flex:1;min-height:0;display:flex}
+.spanel{display:none;flex:1;min-height:0;overflow:auto}
+.spanel.on{display:flex;flex-direction:column}
+
+/* watchlist table */
+#tbl-watch{font-size:12.5px}
+#tbl-watch th{color:var(--qs-muted-fg);font-weight:600;padding:7px 10px;border-bottom:1px solid var(--tblr-border-color);position:sticky;top:0;background:var(--qs-card)}
+#tbl-watch td{padding:7px 10px;border-bottom:1px solid rgba(51,65,85,.3);font-variant-numeric:tabular-nums}
+#tbl-watch tr{cursor:pointer}
+#tbl-watch tr:hover{background:rgba(51,65,85,.25)}
+#tbl-watch tr.on{background:rgba(34,197,94,.08)}
+
+/* decision mini-list in dock */
+#term-decs{padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.tdec{display:flex;gap:8px;align-items:center;padding:7px 10px;border:1px solid var(--tblr-border-color);border-radius:8px;font-size:12px}
+.tdec .mono{font-size:11px}
+.tdec .dim{font-size:11px;margin-left:auto}
+
+/* ── chat-wrap reparentable ── */
+#chat-wrap{display:flex;flex-direction:column;min-height:0}
+#page-chat #chat-wrap{flex:1}
+#stab-chat #chat-wrap{flex:1}
+#stab-chat #chat-scroll{padding:12px 0}
+#stab-chat #chat-list{max-width:100%;padding:0 10px;gap:12px}
+#stab-chat .msg-col{max-width:88%}
+#stab-chat .composer-inner{padding:0 10px}

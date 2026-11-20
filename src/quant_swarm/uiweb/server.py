@@ -62,6 +62,7 @@ def create_app(store: DashboardStore) -> FastAPI:
                 "account": _rows([acc])[0] if acc else None,
                 "positions": _rows(positions),
                 "reports": _rows(reports),
+                "watchlist": list(store.cfg.watchlist),
             })
         )
 
@@ -73,6 +74,11 @@ def create_app(store: DashboardStore) -> FastAPI:
     async def card(card_id: str) -> JSONResponse:
         detail = await store.card_detail(card_id)
         return JSONResponse(detail or {"error": "not found"}, status_code=200)
+
+    @app.get("/api/market/{symbol}")
+    async def market(symbol: str) -> JSONResponse:
+        detail = await store.market_series(symbol)
+        return JSONResponse(jsonable_encoder(detail or {"error": "no data"}))
 
     @app.post("/api/chat")
     async def chat(body: ChatIn) -> dict:

@@ -9,6 +9,7 @@ let pendingBase = 0;          // expert msg count when the send happened
 let filesCache = null;
 let prevMsgCount = 0;         // chat rows already on screen (for entry animation)
 const kpiPrev = {};           // last rendered KPI values (count-up source)
+/* TV / CUR_SYM / initTerminal / loadSymbol / renderSide live in terminal.js */
 
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -27,17 +28,24 @@ function md(src) {
 }
 
 /* ── nav ── */
+function placeChat(page) {
+  const wrap = $("#chat-wrap");
+  const host = page === "chat" ? $("#page-chat") : $("#stab-chat");
+  if (wrap.parentElement !== host) host.appendChild(wrap);
+}
 function showPage(name) {
   const b = $(`.nav[data-page="${name}"]`) || $(".nav");
   $$(".nav").forEach((x) => x.classList.toggle("on", x === b));
   $$(".page").forEach((p) => p.classList.toggle("on", p.id === "page-" + b.dataset.page));
+  placeChat(b.dataset.page);
   if (b.dataset.page === "learning") loadFiles();
+  if (b.dataset.page === "terminal") initTerminal();
 }
 $$(".nav").forEach((b) => b.addEventListener("click", () => {
   location.hash = b.dataset.page;
   showPage(b.dataset.page);
 }));
-if (location.hash) showPage(location.hash.slice(1));
+showPage(location.hash ? location.hash.slice(1) : "terminal");
 
 /* ── chat ── */
 const EXPERT_CLASS = { investor: "c-investor", quant: "c-quant", system: "dim" };
@@ -207,6 +215,7 @@ function render() {
     `<div class="text-secondary">还没有学习报告 — qs trigger learn 跑一轮</div>`;
 
   renderChat();
+  if (TV) renderSide();
   if (PENDING && expertMsgs().length > pendingBase) PENDING = false;
 }
 
