@@ -1,0 +1,34 @@
+# Agent Notes — Quant$warm
+
+## Environment quirks (WSL2 + Windows host)
+
+- The dev environment is **WSL2 Ubuntu 24.04**; the repo lives on the Windows
+  filesystem at `C:\projects\devin_projects\quant-swarm`
+  (`/mnt/c/projects/devin_projects/quant-swarm` inside WSL).
+- `github.com` is blocked directly; `api.github.com` is reachable. Route git/gh
+  through the Clash proxy on the Windows host:
+  ```bash
+  HOST_IP=$(ip route show default | awk '{print $3}')
+  export https_proxy="http://$HOST_IP:7897" http_proxy="http://$HOST_IP:7897"
+  ```
+  (WSL NAT gateway IP — NOT `127.0.0.1`. Clash must have "Allow LAN" enabled.)
+- `gh` (GitHub CLI) is installed at `~/.local/bin/gh` in WSL and is
+  authenticated as `m4rr5er` (also registered as the credential helper for
+  `https://github.com`).
+
+## Git conventions
+
+- **Commit author**: repo-local `user.name=m4rr5er`,
+  `user.email=148053332+m4rr5er@users.noreply.github.com` (GitHub noreply).
+  The global identity (work account) must NOT be used for this repo.
+- `core.fileMode=false` is set locally (files live on DrvFs).
+- **Commit messages**: English only, Conventional Commits style
+  (`feat:`, `docs:`, `chore:`, ...).
+- **Branching**: every plan/milestone gets its own branch — never commit
+  feature work straight onto `main`. Open a PR for review.
+  e.g. `docs/mvp-architecture`, `feat/m0-scaffolding`, `feat/m1-vertical-slice`.
+
+## Verification
+
+- No build/test toolchain yet (docs-only phase). M0 adds pytest/ruff — run
+  `ruff check src tests` and `pytest` once the scaffold exists.
