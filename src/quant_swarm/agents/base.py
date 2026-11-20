@@ -18,7 +18,9 @@ from quant_swarm.core import subjects
 from quant_swarm.core.bus.base import Handler, MessageBus, Subscription
 from quant_swarm.core.config import AgentSpec, AppConfig, Settings
 from quant_swarm.core.db.engine import session_factory
-from quant_swarm.core.schemas import AgentState, Heartbeat
+from quant_swarm.core.db.models import InfoCardRow
+from quant_swarm.core.schemas import AgentState, Heartbeat, InfoCard
+from quant_swarm.core.timeutils import utcnow
 
 
 class AgentBase(ABC):  # noqa: B024 — hooks are optional, not abstract
@@ -69,8 +71,32 @@ class AgentBase(ABC):  # noqa: B024 — hooks are optional, not abstract
         self._subs.append(sub)
         return sub
 
+    @property
+    def bound(self):
+        """Logger pre-bound with the agent name."""
+        return logger.bind(agent=self.name)
+
     def bump(self, key: str, n: int = 1) -> None:
         self._metrics[key] = self._metrics.get(key, 0) + n
+
+    async def persist_card(self, card: InfoCard, trace: str) -> None:
+        """Write an InfoCard to info_cards — shared by all collection agents."""
+        row = InfoCardRow(
+            card_id=card.card_id,
+            agent=card.agent,
+            kind=str(card.kind),
+            symbols=card.symbols,
+            asof=card.asof,
+            received_ts=utcnow(),
+            ttl_sec=card.ttl_sec,
+            confidence=card.confidence,
+            source=card.source,
+            payload=card.payload,
+            trace_id=trace,
+        )
+        async with self.sessions() as s:
+            s.add(row)
+            await s.commit()
 
     async def _heartbeat_loop(self) -> None:
         while True:

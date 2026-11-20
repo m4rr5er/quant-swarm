@@ -17,7 +17,10 @@ app.add_typer(trigger_app, name="trigger")
 
 
 def _factories() -> dict:
+    from quant_swarm.agents.capital_flow.agent import CapitalFlowAgent
+    from quant_swarm.agents.event_monitor.agent import EventMonitorAgent
     from quant_swarm.agents.execution.agent import ExecutionAgent
+    from quant_swarm.agents.fundamentals.agent import FundamentalsAgent
     from quant_swarm.agents.market_data.agent import MarketDataAgent
     from quant_swarm.brain.service import BrainService
     from quant_swarm.scheduler.service import SchedulerService
@@ -25,6 +28,9 @@ def _factories() -> dict:
     return {
         "scheduler": lambda b, s, c: SchedulerService(b, s, c),
         "market_data": lambda b, s, c: MarketDataAgent(b, s, c),
+        "fundamentals": lambda b, s, c: FundamentalsAgent(b, s, c),
+        "capital_flow": lambda b, s, c: CapitalFlowAgent(b, s, c),
+        "event_monitor": lambda b, s, c: EventMonitorAgent(b, s, c),
         "brain": lambda b, s, c: BrainService(b, s, c),
         "execution": lambda b, s, c: ExecutionAgent(b, s, c),
     }
@@ -95,8 +101,11 @@ def _run_all() -> None:
     """All-in-one dev mode — every enabled component as tasks on one bus."""
     from quant_swarm.core.runtime import launch_all
 
+    settings = load_settings()
+    cfg = load_config(settings.config_dir)
     f = _factories()
-    launch_all([f["scheduler"], f["market_data"], f["brain"], f["execution"]])
+    enabled = [f[name] for name in f if name == "scheduler" or cfg.agent(name).enabled]
+    launch_all(enabled)
 
 
 async def _fire(subject: str, model) -> None:

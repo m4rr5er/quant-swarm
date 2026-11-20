@@ -8,9 +8,6 @@ from quant_swarm.agents.base import AgentBase
 from quant_swarm.core import subjects
 from quant_swarm.core.bus.base import BusMessage, MessageBus
 from quant_swarm.core.config import AppConfig, Settings
-from quant_swarm.core.db.models import InfoCardRow
-from quant_swarm.core.schemas import InfoCard
-from quant_swarm.core.timeutils import utcnow
 
 from .providers import MarketDataProvider, make_provider
 
@@ -45,27 +42,9 @@ class MarketDataAgent(AgentBase):
                 await self.bus.publish_model(
                     subjects.cards_market(symbol), card, trace_id=trace
                 )
-                await self._persist(card, trace)
+                await self.persist_card(card, trace)
                 self.bump("cards")
             except Exception:
                 self.bump("errors")
                 bound.exception("collect failed for {}", symbol)
         bound.info("collect done: {} symbols", len(self.cfg.watchlist))
-
-    async def _persist(self, card: InfoCard, trace: str) -> None:
-        row = InfoCardRow(
-            card_id=card.card_id,
-            agent=card.agent,
-            kind=str(card.kind),
-            symbols=card.symbols,
-            asof=card.asof,
-            received_ts=utcnow(),
-            ttl_sec=card.ttl_sec,
-            confidence=card.confidence,
-            source=card.source,
-            payload=card.payload,
-            trace_id=trace,
-        )
-        async with self.sessions() as s:
-            s.add(row)
-            await s.commit()

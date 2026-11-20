@@ -4,24 +4,30 @@
 agents:
   market_data:
     enabled: true
-    provider: mock            # mock | akshare | tushare
+    provider: akshare         # mock | akshare | tushare
     params:
       bar_interval: "1d"
-      seed: 42
+      n_bars: 60
+      adjust: qfq             # forward-adjusted daily bars
+      # seed: 42              # mock provider only
 
   fundamentals:
-    enabled: false
-    llm_profile: default      # NLP sentiment scoring model
+    enabled: true
+    llm_profile: default      # NLP sentiment scoring model (later milestone)
+    # params:
+    #   cron: "0 10 * * 1-5"  # optional per-agent collect schedule override
 
   capital_flow:
-    enabled: false
+    enabled: true
     provider: akshare
+    params:
+      days: 5                 # recent fund-flow rows per card
 
   event_monitor:
-    enabled: false
+    enabled: true             # reactive: listens to market cards, no polling
     params:
-      spike_pct: 5.0
-      scan_interval_sec: 30
+      spike_pct: 0.05         # |day change| >= 5%  -> WARN
+      critical_pct: 0.09      # |day change| >= 9%  -> CRITICAL (down = veto)
 
   risk_review:
     enabled: false
@@ -30,7 +36,8 @@ agents:
     enabled: true
     llm_profile: default
     params:
-      prompt_version: "v1"
+      use_llm: true           # false -> MACrossPolicy only
+      prompt_version: "decision_v1"
 
   execution:
     enabled: true

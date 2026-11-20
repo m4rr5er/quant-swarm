@@ -33,3 +33,29 @@ def rsi(closes: list[float], period: int = 14) -> float | None:
 def lot_floor(qty: float, lot: int = 100) -> int:
     """Round down to whole lots (A-share 100-share minimum)."""
     return int(qty // lot) * lot
+
+
+def ema_series(values: list[float], n: int) -> list[float]:
+    """Full EMA series (seeded with the first value); empty if input empty."""
+    if not values:
+        return []
+    k = 2 / (n + 1)
+    out = [values[0]]
+    for v in values[1:]:
+        out.append(v * k + out[-1] * (1 - k))
+    return out
+
+
+def macd(
+    closes: list[float], fast: int = 12, slow: int = 26, signal: int = 9
+) -> dict[str, float] | None:
+    """MACD dif/dea/hist for the latest bar; None if insufficient data."""
+    if len(closes) < slow + signal:
+        return None
+    dif = [f - s for f, s in zip(ema_series(closes, fast), ema_series(closes, slow), strict=True)]
+    dea = ema_series(dif, signal)
+    return {
+        "dif": dif[-1],
+        "dea": dea[-1],
+        "hist": (dif[-1] - dea[-1]) * 2,
+    }
