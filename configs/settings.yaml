@@ -1,0 +1,30 @@
+# Quant$warm — business config (non-secret). Secrets live in .env.
+
+watchlist:
+  - "600519.SH"   # 贵州茅台
+  - "000001.SZ"   # 平安银行
+
+schedule:
+  market_collect_cron: "*/5 9-15 * * 1-5"   # trading hours, weekdays
+  decide_cron: "30 14 * * 1-5"
+
+risk:
+  max_position_weight: 0.20      # single-name cap
+  require_manual_confirm: true   # gate before ANY real order
+
+# LLM named profiles — add/remove freely; any OpenAI-compatible endpoint
+# (official or third-party gateway) works. The api key comes from the env
+# var named by api_key_env, never from this file.
+llm:
+  profiles:
+    default:
+      base_url: "https://api.deepseek.com/v1"
+      api_key_env: "LLM_API_KEY_DEFAULT"
+      model: "deepseek-chat"
+      temperature: 0.2
+      timeout_sec: 60
+    alt:
+      base_url: "https://api.openai.com/v1"
+      api_key_env: "LLM_API_KEY_ALT"
+      model: "gpt-4o-mini"
+      temperature: 0.2
