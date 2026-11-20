@@ -70,3 +70,16 @@ agents:
     params:
       max_rounds: 8
       collect_wait_sec: 25
+
+  # --- learning + IM (M5c) ----------------------------------------------
+  learner:
+    enabled: true
+    llm_profile: default      # cheap model is fine — cycles are batched
+    params:
+      interval_min: 60        # 0 = manual only (qs trigger learn)
+
+  im_telegram:
+    enabled: false            # flip on after QS_TG_TOKEN is in .env
+    params:
+      token_env: QS_TG_TOKEN
+      poll_timeout: 30

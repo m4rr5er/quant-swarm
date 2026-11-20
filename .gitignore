@@ -44,3 +44,6 @@ Thumbs.db
 # Vendored binaries (downloaded via scripts instead)
 deploy/bin/
 nats-server*
+
+# learner skill proposals are runtime artifacts; promote via qs promote
+skills/*/proposed.md

@@ -24,6 +24,7 @@ from quant_swarm.core.db.models import (
     InfoCardRow,
     MessageRow,
     PositionRow,
+    ReviewReportRow,
 )
 from quant_swarm.core.ids import new_id
 from quant_swarm.core.schemas import (
@@ -210,6 +211,38 @@ class DashboardStore:
                 .scalars()
                 .all()
             )
+
+    async def learning_reports(self, limit: int = 50) -> list[ReviewReportRow]:
+        async with self.sessions() as s:
+            return list(
+                (
+                    await s.execute(
+                        select(ReviewReportRow)
+                        .order_by(ReviewReportRow.ts.desc())
+                        .limit(limit)
+                    )
+                )
+                .scalars()
+                .all()
+            )
+
+    def learning_files(self) -> dict[str, str]:
+        """memory/ + skills/ contents for the learning tab — label -> text."""
+        from pathlib import Path
+
+        from quant_swarm.core.paths import SKILLS_DIR
+
+        out: dict[str, str] = {}
+        mem = Path(self.settings.memory_dir)
+        if mem.exists():
+            for p in sorted(mem.rglob("*.md")):
+                out[f"memory/{p.relative_to(mem)}"] = p.read_text(encoding="utf-8")
+        if SKILLS_DIR.exists():
+            for p in sorted(SKILLS_DIR.rglob("*.md")):
+                out[f"skills/{p.relative_to(SKILLS_DIR)}"] = p.read_text(
+                    encoding="utf-8"
+                )
+        return out
 
     async def card_detail(self, card_id: str) -> dict[str, Any] | None:
         """Resolve a card_id to its full payload (memory first, then db)."""

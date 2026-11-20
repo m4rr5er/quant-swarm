@@ -19,6 +19,9 @@ def ctrl_collect_all() -> str:
 
 CTRL_DECIDE = f"{PREFIX}.ctrl.decide"
 CTRL_BACKTEST = f"{PREFIX}.ctrl.backtest"
+CTRL_LEARN = f"{PREFIX}.ctrl.learn"
+
+LEARN_REPORT = f"{PREFIX}.learn.report"
 
 
 def cards_market(symbol: str) -> str:

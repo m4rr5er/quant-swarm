@@ -42,9 +42,11 @@ def _factories() -> dict:
     from quant_swarm.agents.event_monitor.agent import EventMonitorAgent
     from quant_swarm.agents.execution.agent import ExecutionAgent
     from quant_swarm.agents.fundamentals.agent import FundamentalsAgent
+    from quant_swarm.agents.learner.agent import LearnerService
     from quant_swarm.agents.market_data.agent import MarketDataAgent
     from quant_swarm.brain.service import BrainService
     from quant_swarm.chat.service import ChatService
+    from quant_swarm.im.telegram import TelegramGateway
     from quant_swarm.scheduler.service import SchedulerService
 
     return {
@@ -59,6 +61,8 @@ def _factories() -> dict:
         "chat": _named("chat", ChatService),
         "investor": _expert("investor"),
         "quant": _expert("quant"),
+        "learner": _named("learner", LearnerService),
+        "im_telegram": _named("im_telegram", TelegramGateway),
     }
 
 
@@ -167,6 +171,36 @@ def _trigger_decide() -> None:
 
     asyncio.run(_fire(subjects.CTRL_DECIDE, CtrlCommand(command="decide")))
     typer.echo("fired decide")
+
+
+@trigger_app.command("learn")
+def _trigger_learn() -> None:
+    """Ask the learner to run one observation/reflection cycle now."""
+    from quant_swarm.core import subjects
+    from quant_swarm.core.schemas import CtrlCommand
+
+    asyncio.run(_fire(subjects.CTRL_LEARN, CtrlCommand(command="learn")))
+    typer.echo("fired learn")
+
+
+@app.command("promote")
+def _promote(agent: str) -> None:
+    """Promote a learner skill proposal: skills/<agent>/proposed.md ->
+    versioned file + current.md (git-tracked, human-audited)."""
+    import shutil
+
+    from quant_swarm.core.paths import skill_dir
+    from quant_swarm.core.timeutils import utcnow
+
+    d = skill_dir(agent)
+    proposed = d / "proposed.md"
+    if not proposed.exists():
+        raise typer.BadParameter(f"no proposal at {proposed}")
+    version = d / f"v{utcnow().strftime('%Y%m%d%H%M%S')}.md"
+    shutil.copy(proposed, version)
+    shutil.copy(proposed, d / "current.md")
+    proposed.unlink()
+    typer.echo(f"promoted -> {version.name} + current.md")
 
 
 @trigger_app.command("chat")
