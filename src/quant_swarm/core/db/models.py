@@ -115,6 +115,30 @@ class DLQRow(Base):
     ts: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
+class SessionRow(Base):
+    __tablename__ = "sessions"
+
+    session_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    channel: Mapped[str] = mapped_column(String(32), default="dashboard")
+    started_ts: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    last_ts: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    meta: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class MessageRow(Base):
+    __tablename__ = "messages"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    session_id: Mapped[str] = mapped_column(String(64), index=True)
+    role: Mapped[str] = mapped_column(String(16))
+    expert: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    channel: Mapped[str] = mapped_column(String(32), default="dashboard")
+    content: Mapped[str] = mapped_column(Text, default="")
+    refs: Mapped[list] = mapped_column(JSON, default=list)
+    trace_id: Mapped[str] = mapped_column(String(64), default="", index=True)
+    ts: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
 class JobRunRow(Base):
     __tablename__ = "job_runs"
 

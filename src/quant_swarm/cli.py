@@ -26,6 +26,16 @@ def _named(name, cls):
     return factory
 
 
+def _expert(name: str):
+    def factory(b, s, c):
+        from quant_swarm.experts.base import ExpertService
+
+        return ExpertService(b, s, c, expert_name=name)
+
+    factory.__name__ = name
+    return factory
+
+
 def _factories() -> dict:
     from quant_swarm.agents.capital_flow.agent import CapitalFlowAgent
     from quant_swarm.agents.event_monitor.agent import EventMonitorAgent
@@ -33,6 +43,7 @@ def _factories() -> dict:
     from quant_swarm.agents.fundamentals.agent import FundamentalsAgent
     from quant_swarm.agents.market_data.agent import MarketDataAgent
     from quant_swarm.brain.service import BrainService
+    from quant_swarm.chat.service import ChatService
     from quant_swarm.scheduler.service import SchedulerService
 
     return {
@@ -43,6 +54,9 @@ def _factories() -> dict:
         "event_monitor": _named("event_monitor", EventMonitorAgent),
         "brain": _named("brain", BrainService),
         "execution": _named("execution", ExecutionAgent),
+        "chat": _named("chat", ChatService),
+        "investor": _expert("investor"),
+        "quant": _expert("quant"),
     }
 
 
@@ -151,6 +165,19 @@ def _trigger_decide() -> None:
 
     asyncio.run(_fire(subjects.CTRL_DECIDE, CtrlCommand(command="decide")))
     typer.echo("fired decide")
+
+
+@trigger_app.command("chat")
+def _trigger_chat(
+    text: str, session: str = "cli", channel: str = "dashboard"
+) -> None:
+    """Send a user ChatMessage on qs.chat.in (headless chat)."""
+    from quant_swarm.core import subjects
+    from quant_swarm.core.schemas import ChatMessage, ChatRole
+
+    msg = ChatMessage(session_id=session, role=ChatRole.USER, content=text, channel=channel)
+    asyncio.run(_fire(subjects.CHAT_IN, msg))
+    typer.echo(f"chat sent (session={session})")
 
 
 if __name__ == "__main__":
