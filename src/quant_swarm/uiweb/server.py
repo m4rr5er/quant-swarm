@@ -23,6 +23,7 @@ from quant_swarm.core.logging import setup_logging
 from quant_swarm.uiweb.store import DashboardStore
 
 STATIC = Path(__file__).parent / "static"
+OUT = Path(__file__).parent / "frontend" / "out"
 
 
 def _rows(objs: list | Any) -> list[dict]:
@@ -88,7 +89,15 @@ def create_app(store: DashboardStore) -> FastAPI:
 
     @app.get("/")
     async def index() -> FileResponse:
-        return FileResponse(STATIC / "index.html")
+        built = OUT / "index.html"
+        return FileResponse(built if built.exists() else STATIC / "index.html")
+
+    @app.get("/_next/{path:path}")
+    async def spa_assets(path: str):
+        f = (OUT / "_next" / path).resolve()
+        if f.is_file() and str(f).startswith(str(OUT.resolve())):
+            return FileResponse(f)
+        return JSONResponse({"error": "not found"}, status_code=404)
 
     app.mount("/static", StaticFiles(directory=STATIC), name="static")
     return app

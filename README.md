@@ -59,6 +59,17 @@ qs promote quant              # promote a learner skill proposal
 **WSLg CJK fonts**: if the dashboard shows tofu boxes for Chinese, link Windows fonts once:
 `mkdir -p ~/.local/share/fonts && ln -s /mnt/c/Windows/Fonts ~/.local/share/fonts/win && fc-cache -f`
 
+**Web terminal (TradingView-style)**: the dashboard frontend is a Next.js app
+(forked from [tradingview-gratis](https://github.com/outlinersclub-cpu/tradingview-gratis)) living in
+`src/quant_swarm/uiweb/frontend`. A prebuilt bundle ships in `frontend/out` —
+`qs run ui` serves it automatically. To rebuild after editing the frontend:
+
+```bash
+cd src/quant_swarm/uiweb/frontend
+npm ci && npm run build     # writes out/; restart `qs run ui` to serve it
+# dev loop: node scripts/screenshot.mjs  (headless UI screenshot)
+```
+
 ## Tech stack
 
 | Layer | Choice |

@@ -47,3 +47,9 @@ nats-server*
 
 # learner skill proposals are runtime artifacts; promote via qs promote
 skills/*/proposed.md
+
+# frontend (tradingview-gratis fork)
+src/quant_swarm/uiweb/frontend/node_modules/
+src/quant_swarm/uiweb/frontend/.next/
+src/quant_swarm/uiweb/frontend/next-env.d.ts
+src/quant_swarm/uiweb/frontend/tsconfig.tsbuildinfo
