@@ -26,9 +26,10 @@ from PySide6.QtWidgets import (
 )
 from qasync import asyncSlot
 
-from quant_swarm.core.schemas import ChatRole, Decision, InfoCard
+from quant_swarm.core.schemas import Decision, InfoCard
 
 from .store import DashboardStore
+from .theme import chat_document
 
 
 def _fmt_ts(ts: datetime | None) -> str:
@@ -47,6 +48,24 @@ def _fill(table: QTableWidget, headers: list[str], rows: list[list[str]]) -> Non
     table.resizeColumnsToContents()
     table.setAlternatingRowColors(True)
     table.horizontalHeader().setStretchLastSection(True)
+
+
+_GOOD = "#5bd0a0"
+_WARN = "#f0a35e"
+_BAD = "#ff6b6b"
+
+
+def _tint(table: QTableWidget, col: int, colors: dict[str, str]) -> None:
+    """Colorize a column's cells by value (state/action/level)."""
+    from PySide6.QtGui import QColor
+
+    for i in range(table.rowCount()):
+        item = table.item(i, col)
+        if item is None:
+            continue
+        color = colors.get(item.text().upper())
+        if color:
+            item.setForeground(QColor(color))
 
 
 class CardDetailDialog(QDialog):
@@ -191,20 +210,7 @@ class MainWindow(QMainWindow):
         self.refresh_risk()
 
     def refresh_chat(self) -> None:
-        parts = []
-        for m in self.store.chat:
-            if m.role == ChatRole.USER:
-                who = "<b>我</b>"
-            else:
-                who = f"<b>{m.expert or 'system'}</b>"
-            refs = (
-                f'<br/><small>refs: {", ".join(m.refs)}</small>' if m.refs else ""
-            )
-            content = m.content.replace("\n", "<br/>")
-            parts.append(
-                f"<p><small>{_fmt_ts(m.ts)}</small> {who}<br/>{content}{refs}</p>"
-            )
-        self.txt_chat.setHtml("".join(parts) or "<i>no messages yet</i>")
+        self.txt_chat.setHtml(chat_document(list(self.store.chat), _fmt_ts))
         bar = self.txt_chat.verticalScrollBar()
         bar.setValue(bar.maximum())
 
@@ -217,6 +223,11 @@ class MainWindow(QMainWindow):
             age = f"{(now - ts).total_seconds():.0f}s"
             rows.append([name, str(hb.state), _fmt_ts(ts), age, json.dumps(hb.metrics)])
         _fill(self.tbl_agents, ["agent", "state", "last hb", "age", "metrics"], rows)
+        _tint(
+            self.tbl_agents,
+            1,
+            {"RUNNING": _GOOD, "READY": _GOOD, "OK": _GOOD, "ERROR": _BAD, "DOWN": _BAD},
+        )
 
     def refresh_cards(self) -> None:
         self._card_rows = list(self.store.cards)
@@ -252,6 +263,16 @@ class MainWindow(QMainWindow):
                 for d in self._decision_rows
             ],
         )
+        _tint(
+            self.tbl_decisions,
+            2,
+            {
+                "BUY": _GOOD,
+                "SELL": _BAD,
+                "TRADEACTION.BUY": _GOOD,
+                "TRADEACTION.SELL": _BAD,
+            },
+        )
 
     def refresh_risk(self) -> None:
         _fill(
@@ -269,6 +290,7 @@ class MainWindow(QMainWindow):
                 for e in self.store.risk_events
             ],
         )
+        _tint(self.tbl_risk, 1, {"WARN": _WARN, "CRITICAL": _BAD, "INFO": ""})
 
     @asyncSlot()
     async def refresh_portfolio(self) -> None:

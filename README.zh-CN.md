@@ -56,6 +56,9 @@ qs promote quant              # 晋升一条技能提案
 
 **Telegram**：`@BotFather` → `/newbot` → token 写进 `.env` 的 `QS_TG_TOKEN` → `configs/agents.yaml` 里 `im_telegram.enabled: true`——`dev_all.sh` 会自动带上它。
 
+**WSLg 中文字体**：仪表盘中文显示方块的话，链接一次 Windows 字体即可：
+`mkdir -p ~/.local/share/fonts && ln -s /mnt/c/Windows/Fonts ~/.local/share/fonts/win && fc-cache -f`
+
 ## 技术栈
 
 | 层 | 选型 |
