@@ -15,8 +15,15 @@ def make_provider(spec: AgentSpec) -> MarketDataProvider:
             seed=int(spec.params.get("seed", 42)),
             n_bars=int(spec.params.get("n_bars", 60)),
         )
-    if name in ("akshare", "tushare"):
-        raise NotImplementedError(f"provider {name!r} lands in M2")
+    if name == "akshare":
+        from .akshare import AkshareMarketProvider
+
+        return AkshareMarketProvider(
+            n_bars=int(spec.params.get("n_bars", 60)),
+            adjust=str(spec.params.get("adjust", "qfq")),
+        )
+    if name == "tushare":
+        raise NotImplementedError("provider 'tushare' needs a token — later milestone")
     raise ValueError(f"unknown market-data provider: {name!r}")
 
 

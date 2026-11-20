@@ -30,16 +30,26 @@ class SchedulerService(AgentBase):
         super().__init__(*args, **kwargs)
         self._sched: AsyncIOScheduler | None = None
 
+    # Agents driven by qs.ctrl.collect.<name>. event_monitor is reactive
+    # (it listens to market cards) so it needs no collect job.
+    COLLECT_AGENTS = ("market_data", "fundamentals", "capital_flow")
+
     async def on_start(self) -> None:
         sched = AsyncIOScheduler()
         s = self.cfg.schedule
 
-        if self.cfg.agent("market_data").enabled:
+        for agent in self.COLLECT_AGENTS:
+            spec = self.cfg.agent(agent)
+            if not spec.enabled:
+                continue
             sched.add_job(
-                self._job_collect,
-                self._trigger(s.market_collect_cron, s.market_collect_interval_sec),
-                id="collect.market_data",
-                name="collect market_data",
+                lambda a=agent: self._job_collect(a),
+                self._trigger(
+                    str(spec.params.get("cron", s.market_collect_cron)),
+                    spec.params.get("interval_sec", s.market_collect_interval_sec),
+                ),
+                id=f"collect.{agent}",
+                name=f"collect {agent}",
                 coalesce=True,
             )
         if self.cfg.agent("brain").enabled:
@@ -69,11 +79,11 @@ class SchedulerService(AgentBase):
             return IntervalTrigger(seconds=interval_sec)
         return CronTrigger.from_crontab(cron)
 
-    async def _job_collect(self) -> None:
+    async def _job_collect(self, agent: str) -> None:
         await self._run_job(
-            "collect.market_data",
+            f"collect.{agent}",
             lambda trace: self.bus.publish_model(
-                subjects.ctrl_collect("market_data"),
+                subjects.ctrl_collect(agent),
                 CtrlCommand(command="collect"),
                 trace_id=trace,
             ),
