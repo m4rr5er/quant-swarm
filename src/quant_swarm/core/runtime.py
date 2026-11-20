@@ -9,6 +9,8 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable
 
+from loguru import logger
+
 from quant_swarm.core.bus import MessageBus, make_bus
 from quant_swarm.core.config import AppConfig, Settings, load_config, load_settings
 from quant_swarm.core.db.engine import init_db
@@ -26,6 +28,44 @@ class Component:
 
 
 Factory = Callable[[MessageBus, Settings, AppConfig], Component]
+
+
+async def supervise_component(
+    name: str,
+    factory: Factory,
+    bus: MessageBus,
+    settings: Settings,
+    cfg: AppConfig,
+    *,
+    max_backoff: float = 30.0,
+) -> int:
+    """Run one component; restart it on crash with exponential backoff.
+
+    Returns the number of restarts once the component stops cleanly.
+    A component "crashes" when ``start``/``wait_stopped`` raises —
+    handler-level faults are already absorbed by AgentBase's DLQ guard.
+    """
+    restarts, backoff = 0, 1.0
+    while True:
+        component = factory(bus, settings, cfg)
+        try:
+            await component.start()
+            await component.wait_stopped()
+            return restarts
+        except asyncio.CancelledError:
+            await component.stop()
+            raise
+        except Exception:
+            restarts += 1
+            logger.exception(
+                "component {} crashed; restart #{} in {:.0f}s", name, restarts, backoff
+            )
+            try:
+                await component.stop()
+            except Exception:
+                logger.debug("post-crash stop() failed for {}", name)
+            await asyncio.sleep(backoff)
+            backoff = min(backoff * 2, max_backoff)
 
 
 async def _serve(factory: Factory, name: str) -> None:
@@ -50,15 +90,21 @@ async def _serve_all(factories: list[Factory]) -> None:
     cfg = load_config(settings.config_dir)
     await init_db(settings.db_path)
     bus = make_bus(settings.bus, settings.nats_url)
-    components = [f(bus, settings, cfg) for f in factories]
     try:
         await bus.connect()
-        for c in components:
-            await c.start()
-        await asyncio.gather(*(c.wait_stopped() for c in components))
+        await asyncio.gather(
+            *(
+                supervise_component(
+                    getattr(factory, "__name__", "component"),
+                    factory,
+                    bus,
+                    settings,
+                    cfg,
+                )
+                for factory in factories
+            )
+        )
     finally:
-        for c in components:
-            await c.stop()
         await bus.close()
 
 

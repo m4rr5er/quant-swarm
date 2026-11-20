@@ -80,7 +80,7 @@ class AppConfig(BaseModel):
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="QS_", env_file=".env", extra="ignore")
 
-    bus: str = "nats"  # nats | local
+    bus: str = "nats"  # nats | nats_js | local
     nats_url: str = "nats://127.0.0.1:4222"
     db_path: str = "data/quantswarm.db"
     log_dir: str = "logs"

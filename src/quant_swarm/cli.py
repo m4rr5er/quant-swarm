@@ -16,6 +16,16 @@ app.add_typer(run_app, name="run")
 app.add_typer(trigger_app, name="trigger")
 
 
+def _named(name, cls):
+    """Factory carrying the component name (crash-restart logs use it)."""
+
+    def factory(b, s, c):
+        return cls(b, s, c)
+
+    factory.__name__ = name
+    return factory
+
+
 def _factories() -> dict:
     from quant_swarm.agents.capital_flow.agent import CapitalFlowAgent
     from quant_swarm.agents.event_monitor.agent import EventMonitorAgent
@@ -26,13 +36,13 @@ def _factories() -> dict:
     from quant_swarm.scheduler.service import SchedulerService
 
     return {
-        "scheduler": lambda b, s, c: SchedulerService(b, s, c),
-        "market_data": lambda b, s, c: MarketDataAgent(b, s, c),
-        "fundamentals": lambda b, s, c: FundamentalsAgent(b, s, c),
-        "capital_flow": lambda b, s, c: CapitalFlowAgent(b, s, c),
-        "event_monitor": lambda b, s, c: EventMonitorAgent(b, s, c),
-        "brain": lambda b, s, c: BrainService(b, s, c),
-        "execution": lambda b, s, c: ExecutionAgent(b, s, c),
+        "scheduler": _named("scheduler", SchedulerService),
+        "market_data": _named("market_data", MarketDataAgent),
+        "fundamentals": _named("fundamentals", FundamentalsAgent),
+        "capital_flow": _named("capital_flow", CapitalFlowAgent),
+        "event_monitor": _named("event_monitor", EventMonitorAgent),
+        "brain": _named("brain", BrainService),
+        "execution": _named("execution", ExecutionAgent),
     }
 
 

@@ -15,7 +15,7 @@ from typing import Any
 from loguru import logger
 
 from quant_swarm.core import subjects
-from quant_swarm.core.bus.base import Handler, MessageBus, Subscription
+from quant_swarm.core.bus.base import BusMessage, Handler, MessageBus, Subscription
 from quant_swarm.core.config import AgentSpec, AppConfig, Settings
 from quant_swarm.core.db.engine import session_factory
 from quant_swarm.core.db.models import InfoCardRow
@@ -37,6 +37,7 @@ class AgentBase(ABC):  # noqa: B024 — hooks are optional, not abstract
         self._hb_task: asyncio.Task | None = None
         self._subs: list[Subscription] = []
         self._metrics: dict[str, Any] = {"errors": 0}
+        self._seen_ids: set[str] = set()
 
     async def start(self) -> None:
         await self.on_start()
@@ -65,11 +66,83 @@ class AgentBase(ABC):  # noqa: B024 — hooks are optional, not abstract
         logger.info("{} stopped", self.name)
 
     async def subscribe(
-        self, subject: str, handler: Handler, *, queue_group: str | None = None
+        self,
+        subject: str,
+        handler: Handler,
+        *,
+        queue_group: str | None = None,
+        durable: str | None = None,
     ) -> Subscription:
-        sub = await self.bus.subscribe(subject, handler, queue_group=queue_group)
+        """Subscribe with M4 hardening: msg_id dedup + handler exceptions -> DLQ."""
+        if durable is None:
+            durable = f"{self.name}-" + (
+                subject.replace(f"{subjects.PREFIX}.", "")
+                .replace(".", "_")
+                .replace("*", "x")
+                .replace(">", "all")
+            )
+
+        async def _guarded(msg: BusMessage) -> None:
+            try:
+                env = msg.envelope()
+            except Exception:
+                await self._dead_letter(msg, "malformed envelope")
+                return
+            if env.msg_id in self._seen_ids:
+                self.bump("deduped")
+                return
+            self._remember(env.msg_id)
+            try:
+                await handler(msg)
+            except Exception as exc:
+                self.bump("errors")
+                logger.bind(trace_id=env.trace_id).exception(
+                    "{} handler failed on {}", self.name, subject
+                )
+                await self._dead_letter(msg, f"{type(exc).__name__}: {exc}")
+
+        sub = await self.bus.subscribe(
+            subject, _guarded, queue_group=queue_group, durable=durable
+        )
         self._subs.append(sub)
         return sub
+
+    def _remember(self, msg_id: str) -> None:
+        self._seen_ids.add(msg_id)
+        if len(self._seen_ids) > 20_000:
+            self._seen_ids = set(list(self._seen_ids)[-10_000:])
+
+    async def _dead_letter(self, msg: BusMessage, error: str) -> None:
+        """Route a failed message to qs.dlq.<agent> + the dead_letters table."""
+        from quant_swarm.core.db.models import DLQRow
+
+        try:
+            env = msg.envelope()
+            payload, msg_id, trace = env.payload, env.msg_id, env.trace_id
+        except Exception:
+            payload, msg_id, trace = (
+                {"raw": msg.data[:4096].decode("utf-8", "replace")},
+                "",
+                "",
+            )
+        try:
+            async with self.sessions() as s:
+                s.add(
+                    DLQRow(
+                        agent=self.name,
+                        subject=msg.subject,
+                        msg_id=msg_id,
+                        trace_id=trace,
+                        error=error[:500],
+                        payload=payload if isinstance(payload, dict) else {"data": payload},
+                        ts=utcnow(),
+                    )
+                )
+                await s.commit()
+            await self.bus.publish(subjects.dlq(self.name), msg.data)
+            self.bump("dlq")
+        except Exception:
+            logger.exception("dead-letter write failed for {}", self.name)
 
     @property
     def bound(self):

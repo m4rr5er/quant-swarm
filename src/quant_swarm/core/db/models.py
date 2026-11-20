@@ -102,6 +102,19 @@ class AgentStateRow(Base):
     meta: Mapped[dict] = mapped_column(JSON, default=dict)
 
 
+class DLQRow(Base):
+    __tablename__ = "dead_letters"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    agent: Mapped[str] = mapped_column(String(64), index=True)
+    subject: Mapped[str] = mapped_column(String(128))
+    msg_id: Mapped[str] = mapped_column(String(64), default="", index=True)
+    trace_id: Mapped[str] = mapped_column(String(64), default="", index=True)
+    error: Mapped[str] = mapped_column(Text, default="")
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    ts: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
 class JobRunRow(Base):
     __tablename__ = "job_runs"
 
