@@ -1,49 +1,30 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-bs-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Quant$warm</title>
+<link rel="stylesheet" href="/static/vendor/tabler.min.css">
+<link rel="stylesheet" href="/static/vendor/tabler-icons.min.css">
 <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
 <div id="app">
   <nav id="rail">
     <div class="logo">Q$</div>
-    <button class="nav on" data-page="chat" title="Chat">
-      <svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8c-1.4 0-2.8-.3-4-.9L3 20l1-4.5A8 8 0 1 1 21 12z"/></svg>
-      <span>对话</span>
-    </button>
-    <button class="nav" data-page="agents" title="Agents">
-      <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9zM4 10h-2M4 14h-2M22 10h-2M22 14h-2M10 4V2M14 4V2M10 22v-2M14 22v-2"/></svg>
-      <span>组件</span>
-    </button>
-    <button class="nav" data-page="cards" title="Cards">
-      <svg viewBox="0 0 24 24"><path d="M12 2 3 7l9 5 9-5-9-5zM3 12l9 5 9-5M3 17l9 5 9-5"/></svg>
-      <span>卡片</span>
-    </button>
-    <button class="nav" data-page="decisions" title="Decisions">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
-      <span>决策</span>
-    </button>
-    <button class="nav" data-page="portfolio" title="Portfolio">
-      <svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-      <span>持仓</span>
-    </button>
-    <button class="nav" data-page="risk" title="Risk">
-      <svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 9.3 8 11 4.6-1.7 8-6 8-11V5l-8-3z"/></svg>
-      <span>风控</span>
-    </button>
-    <button class="nav" data-page="learning" title="Learning">
-      <svg viewBox="0 0 24 24"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.2 2.2M16.2 16.2l2.2 2.2M5.6 18.4l2.2-2.2M16.2 7.8l2.2-2.2"/><circle cx="12" cy="12" r="3"/></svg>
-      <span>学习</span>
-    </button>
+    <button class="nav on" data-page="chat"><i class="ti ti-message-2"></i><span>对话</span></button>
+    <button class="nav" data-page="agents"><i class="ti ti-cpu"></i><span>组件</span></button>
+    <button class="nav" data-page="cards"><i class="ti ti-stack-2"></i><span>卡片</span></button>
+    <button class="nav" data-page="decisions"><i class="ti ti-target"></i><span>决策</span></button>
+    <button class="nav" data-page="portfolio"><i class="ti ti-briefcase"></i><span>持仓</span></button>
+    <button class="nav" data-page="risk"><i class="ti ti-shield"></i><span>风控</span></button>
+    <button class="nav" data-page="learning"><i class="ti ti-brain"></i><span>学习</span></button>
   </nav>
 
   <main>
     <header id="topbar">
-      <span class="title">Quant$warm</span>
-      <span id="status" class="status"><i class="dot"></i>connecting…</span>
+      <span class="navbar-brand">Quant<b>$warm</b></span>
+      <span id="status" class="badge"><i class="status-dot"></i>connecting…</span>
       <span class="spacer"></span>
       <span id="clock" class="clock"></span>
     </header>
@@ -51,34 +32,46 @@
     <section id="page-chat" class="page on">
       <div id="chat-scroll"><div id="chat-list"></div></div>
       <div id="composer">
-        <input id="chat-input" placeholder="给决策 AI 下达任务，如：茅台现在能加仓吗 / 回测一下双均线" autocomplete="off">
-        <button id="chat-send">发送</button>
+        <div class="composer-inner">
+          <input id="chat-input" class="form-control" placeholder="给决策 AI 下达任务，如：茅台现在能加仓吗 / 回测一下双均线" autocomplete="off">
+          <button id="chat-send" class="btn btn-primary"><i class="ti ti-send"></i></button>
+        </div>
       </div>
     </section>
 
-    <section id="page-agents" class="page"><div class="pad"><table id="tbl-agents" class="tbl"></table></div></section>
-    <section id="page-cards" class="page"><div class="pad"><table id="tbl-cards" class="tbl"></table></div></section>
-    <section id="page-decisions" class="page"><div class="pad"><table id="tbl-decisions" class="tbl"></table></div></section>
+    <section id="page-agents" class="page"><div class="pad"><div class="card"><div class="table-responsive"><table id="tbl-agents" class="table table-vcenter card-table"></table></div></div></div></section>
+    <section id="page-cards" class="page"><div class="pad"><div class="card"><div class="table-responsive"><table id="tbl-cards" class="table table-vcenter card-table"></table></div></div></div></section>
+    <section id="page-decisions" class="page"><div class="pad"><div class="card"><div class="table-responsive"><table id="tbl-decisions" class="table table-vcenter card-table"></table></div></div></div></section>
     <section id="page-portfolio" class="page"><div class="pad">
-      <div id="kpis"></div>
-      <h4 class="sec">持仓</h4><table id="tbl-pos" class="tbl"></table>
-      <h4 class="sec">成交</h4><table id="tbl-fills" class="tbl"></table>
+      <div id="kpis" class="row row-deck row-cards mb-3"></div>
+      <div class="card mb-3"><div class="card-header"><h3 class="card-title">持仓</h3></div>
+        <div class="table-responsive"><table id="tbl-pos" class="table table-vcenter card-table"></table></div></div>
+      <div class="card"><div class="card-header"><h3 class="card-title">成交</h3></div>
+        <div class="table-responsive"><table id="tbl-fills" class="table table-vcenter card-table"></table></div></div>
     </div></section>
-    <section id="page-risk" class="page"><div class="pad"><table id="tbl-risk" class="tbl"></table></div></section>
+    <section id="page-risk" class="page"><div class="pad"><div class="card"><div class="table-responsive"><table id="tbl-risk" class="table table-vcenter card-table"></table></div></div></div></section>
     <section id="page-learning" class="page"><div class="pad split">
-      <div><h4 class="sec">学习报告</h4><div id="reports"></div></div>
-      <div><h4 class="sec">记忆与技能文件</h4>
+      <div><h4 class="subheader mb-2">学习报告</h4><div id="reports"></div></div>
+      <div><h4 class="subheader mb-2">记忆与技能文件</h4>
         <div id="files">
-          <div id="file-list"></div>
-          <pre id="file-view">← 选择文件查看</pre>
+          <div id="file-list" class="list-group list-group-transparent"></div>
+          <pre id="file-view" class="card card-body">← 选择文件查看</pre>
         </div>
       </div>
     </div></section>
   </main>
 </div>
 
-<div id="modal" class="hidden"><div id="modal-box"><pre id="modal-body"></pre><button id="modal-close">关闭</button></div></div>
+<div id="modal" class="modal-blur hidden"><div class="modal-dialog modal-lg modal-dialog-centered">
+  <div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">卡片详情</h5>
+      <button id="modal-close" class="btn-close"></button></div>
+    <div class="modal-body"><pre id="modal-body"></pre></div>
+  </div>
+</div></div>
 
+<script src="/static/vendor/marked.min.js"></script>
+<script src="/static/vendor/purify.min.js"></script>
 <script src="/static/app.js"></script>
 </body>
 </html>
