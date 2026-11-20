@@ -150,3 +150,16 @@ class JobRunRow(Base):
     status: Mapped[str] = mapped_column(String(16))
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     trace_id: Mapped[str] = mapped_column(String(64), default="", index=True)
+
+
+class ReviewReportRow(Base):
+    __tablename__ = "review_reports"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    report_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    agent: Mapped[str] = mapped_column(String(64), default="", index=True)
+    kind: Mapped[str] = mapped_column(String(32), default="observation")
+    summary: Mapped[str] = mapped_column(Text, default="")
+    details: Mapped[dict] = mapped_column(JSON, default=dict)
+    trace_id: Mapped[str] = mapped_column(String(64), default="", index=True)
+    ts: Mapped[datetime] = mapped_column(DateTime(timezone=True))

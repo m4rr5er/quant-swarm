@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QListWidget,
     QMainWindow,
     QPlainTextEdit,
     QPushButton,
@@ -78,12 +79,14 @@ class MainWindow(QMainWindow):
         self._build_decisions_tab()
         self._build_portfolio_tab()
         self._build_risk_tab()
+        self._build_learning_tab()
         self.setCentralWidget(self.tabs)
 
         store.on_change(self.refresh_all)
         self._db_timer = QTimer(self)
         self._db_timer.setInterval(5000)
         self._db_timer.timeout.connect(self.refresh_portfolio)
+        self._db_timer.timeout.connect(self.refresh_learning)
         self.refresh_all()
 
     # -- tabs ------------------------------------------------------------
@@ -161,6 +164,23 @@ class MainWindow(QMainWindow):
     def _build_risk_tab(self) -> None:
         self.tbl_risk = QTableWidget()
         self.tabs.addTab(self.tbl_risk, "Risk")
+
+    def _build_learning_tab(self) -> None:
+        split = QSplitter(Qt.Orientation.Vertical)
+        self.tbl_reports = QTableWidget()
+        split.addWidget(self.tbl_reports)
+        bottom = QSplitter(Qt.Orientation.Horizontal)
+        self.lst_files = QListWidget()
+        self.lst_files.itemSelectionChanged.connect(self._show_selected_file)
+        self.txt_file = QPlainTextEdit(readOnly=True)
+        bottom.addWidget(self.lst_files)
+        bottom.addWidget(self.txt_file)
+        bottom.setStretchFactor(0, 1)
+        bottom.setStretchFactor(1, 3)
+        split.addWidget(bottom)
+        split.setStretchFactor(0, 1)
+        split.setStretchFactor(1, 2)
+        self.tabs.addTab(split, "Learning")
 
     # -- refresh ----------------------------------------------------------
     def refresh_all(self) -> None:
@@ -289,6 +309,32 @@ class MainWindow(QMainWindow):
                 ]
                 for f in self.store.fills
             ],
+        )
+
+    @asyncSlot()
+    async def refresh_learning(self) -> None:
+        reports = await self.store.learning_reports()
+        _fill(
+            self.tbl_reports,
+            ["time", "kind", "agent", "summary"],
+            [
+                [_fmt_ts(r.ts), r.kind, r.agent or "-", r.summary[:120]]
+                for r in reports
+            ],
+        )
+        files = self.store.learning_files()
+        current = {self.lst_files.item(i).text() for i in range(self.lst_files.count())}
+        for name in sorted(files):
+            if name not in current:
+                self.lst_files.addItem(name)
+        self._file_cache = files
+
+    def _show_selected_file(self) -> None:
+        items = self.lst_files.selectedItems()
+        if not items:
+            return
+        self.txt_file.setPlainText(
+            getattr(self, "_file_cache", {}).get(items[0].text(), "")
         )
 
     def _last_closes(self) -> dict[str, float]:
