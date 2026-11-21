@@ -123,8 +123,8 @@ def _run_brain() -> None:
 
 @run_app.command("ui")
 def _run_ui() -> None:
-    """PySide6 dashboard — live view of bus + operational store."""
-    from quant_swarm.ui.app import run
+    """Web dashboard — serves the SPA on localhost and opens a browser."""
+    from quant_swarm.uiweb.server import run
 
     raise SystemExit(run())
 

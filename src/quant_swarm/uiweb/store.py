@@ -244,6 +244,37 @@ class DashboardStore:
                 )
         return out
 
+    async def market_series(self, symbol: str) -> dict[str, Any] | None:
+        """Newest MARKET card payload carrying ``symbol`` — memory, then db."""
+        for c in self.cards:
+            if c.kind.value == "market" and symbol in (c.symbols or []):
+                return c.model_dump(mode="json")
+        async with self.sessions() as s:
+            rows = (
+                (
+                    await s.execute(
+                        select(InfoCardRow)
+                        .where(InfoCardRow.kind == "market")
+                        .order_by(InfoCardRow.received_ts.desc())
+                        .limit(200)
+                    )
+                )
+                .scalars()
+                .all()
+            )
+        for r in rows:
+            if symbol in (r.symbols or []):
+                return {
+                    "card_id": r.card_id,
+                    "agent": r.agent,
+                    "kind": r.kind,
+                    "symbols": r.symbols,
+                    "asof": r.asof.isoformat(),
+                    "source": r.source,
+                    "payload": r.payload,
+                }
+        return None
+
     async def card_detail(self, card_id: str) -> dict[str, Any] | None:
         """Resolve a card_id to its full payload (memory first, then db)."""
         card = self._card_by_id.get(card_id)

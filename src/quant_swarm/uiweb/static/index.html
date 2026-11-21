@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-bs-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Quant$warm</title>
+<link rel="stylesheet" href="/static/vendor/tabler.min.css">
+<link rel="stylesheet" href="/static/vendor/tabler-icons.min.css">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<div id="app">
+  <nav id="rail">
+    <button class="nav on" data-page="terminal"><i class="ti ti-chart-candle"></i><span>终端</span></button>
+    <button class="nav" data-page="chat"><i class="ti ti-message-2"></i><span>对话</span></button>
+    <button class="nav" data-page="agents"><i class="ti ti-cpu"></i><span>组件</span></button>
+    <button class="nav" data-page="cards"><i class="ti ti-stack-2"></i><span>卡片</span></button>
+    <button class="nav" data-page="decisions"><i class="ti ti-target"></i><span>决策</span></button>
+    <button class="nav" data-page="portfolio"><i class="ti ti-briefcase"></i><span>持仓</span></button>
+    <button class="nav" data-page="risk"><i class="ti ti-shield"></i><span>风控</span></button>
+    <button class="nav" data-page="learning"><i class="ti ti-brain"></i><span>学习</span></button>
+  </nav>
+
+  <main>
+    <header id="topbar">
+      <span id="status" class="badge"><i class="status-dot"></i>connecting…</span>
+      <span class="spacer"></span>
+      <span id="clock" class="clock"></span>
+    </header>
+
+    <!-- ── TradingView-style terminal: symbol bar + candle chart + right dock ── -->
+    <section id="page-terminal" class="page on">
+      <div id="term-toolbar">
+        <div id="sym-chips"></div>
+        <div id="sym-quote"><span id="q-px" class="q-px">-</span><span id="q-chg"></span><span id="q-asof" class="dim"></span></div>
+        <span class="spacer"></span>
+        <span id="q-legend" class="dim">MA5 · MA20 · VOL · 决策标记</span>
+      </div>
+      <div id="term-main">
+        <div id="chart-wrap">
+          <div id="tvchart"></div>
+          <div id="chart-empty" class="dim">选择标的后加载行情…</div>
+        </div>
+        <div id="term-side">
+          <div class="side-tabs">
+            <button class="stab on" data-stab="chat"><i class="ti ti-message-2"></i><span>AI 助手</span></button>
+            <button class="stab" data-stab="watch"><i class="ti ti-list-details"></i><span>自选</span></button>
+            <button class="stab" data-stab="decs"><i class="ti ti-target"></i><span>决策</span></button>
+          </div>
+          <div class="side-panel">
+            <div id="stab-watch" class="spanel"><table id="tbl-watch" class="table table-sm"></table></div>
+            <div id="stab-decs" class="spanel"><div id="term-decs"></div></div>
+            <div id="stab-chat" class="spanel on"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="page-chat" class="page"></section>
+
+    <section id="page-agents" class="page"><div class="pad"><div class="card"><div class="table-responsive"><table id="tbl-agents" class="table table-vcenter card-table"></table></div></div></div></section>
+    <section id="page-cards" class="page"><div class="pad"><div class="card"><div class="table-responsive"><table id="tbl-cards" class="table table-vcenter card-table"></table></div></div></div></section>
+    <section id="page-decisions" class="page"><div class="pad"><div class="card"><div class="table-responsive"><table id="tbl-decisions" class="table table-vcenter card-table"></table></div></div></div></section>
+    <section id="page-portfolio" class="page"><div class="pad">
+      <div id="kpis" class="row row-deck row-cards mb-3"></div>
+      <div class="card mb-3"><div class="card-header"><h3 class="card-title">持仓</h3></div>
+        <div class="table-responsive"><table id="tbl-pos" class="table table-vcenter card-table"></table></div></div>
+      <div class="card"><div class="card-header"><h3 class="card-title">成交</h3></div>
+        <div class="table-responsive"><table id="tbl-fills" class="table table-vcenter card-table"></table></div></div>
+    </div></section>
+    <section id="page-risk" class="page"><div class="pad"><div class="card"><div class="table-responsive"><table id="tbl-risk" class="table table-vcenter card-table"></table></div></div></div></section>
+    <section id="page-learning" class="page"><div class="pad split">
+      <div><h4 class="subheader mb-2">学习报告</h4><div id="reports"></div></div>
+      <div><h4 class="subheader mb-2">记忆与技能文件</h4>
+        <div id="files">
+          <div id="file-list" class="list-group list-group-transparent"></div>
+          <pre id="file-view" class="card card-body">← 选择文件查看</pre>
+        </div>
+      </div>
+    </div></section>
+  </main>
+</div>
+
+<!-- chat UI lives in ONE reparentable container (full page <-> terminal dock) -->
+<div id="chat-wrap">
+  <div id="chat-scroll"><div id="chat-list"></div></div>
+  <div id="composer">
+    <div class="composer-inner">
+      <textarea id="chat-input" class="form-control" rows="1" placeholder="给决策 AI 下达任务，如：茅台现在能加仓吗 / 回测一下双均线"></textarea>
+      <button id="chat-send" class="btn btn-primary"><i class="ti ti-send"></i></button>
+    </div>
+  </div>
+</div>
+
+<div id="modal" class="modal-blur hidden"><div class="modal-dialog modal-lg modal-dialog-centered">
+  <div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">卡片详情</h5>
+      <button id="modal-close" class="btn-close"></button></div>
+    <div class="modal-body"><pre id="modal-body"></pre></div>
+  </div>
+</div></div>
+
+<script src="/static/vendor/lightweight-charts.js"></script>
+<script src="/static/vendor/marked.min.js"></script>
+<script src="/static/vendor/purify.min.js"></script>
+<script src="/static/terminal.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

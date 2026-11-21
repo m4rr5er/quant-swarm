@@ -20,7 +20,7 @@ from quant_swarm.core.schemas import (
     RiskLevel,
 )
 from quant_swarm.core.timeutils import utcnow
-from quant_swarm.ui.store import DashboardStore
+from quant_swarm.uiweb.store import DashboardStore
 
 
 @pytest.fixture
