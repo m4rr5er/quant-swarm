@@ -53,3 +53,8 @@ src/quant_swarm/uiweb/frontend/node_modules/
 src/quant_swarm/uiweb/frontend/.next/
 src/quant_swarm/uiweb/frontend/next-env.d.ts
 src/quant_swarm/uiweb/frontend/tsconfig.tsbuildinfo
+
+# TradingView mirror — proprietary assets, local prototype reference only
+tv-mirror/*.pem
+tv-mirror/*.tradingview.com/
+tv-mirror/*.log
