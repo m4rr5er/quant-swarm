@@ -7,7 +7,14 @@
 <script src="../static/vendor/lightweight-charts.js"></script>
 <script src="../static/vendor/marked.min.js"></script>
 <script src="../static/vendor/purify.min.js"></script>
+<script src="./tv-icons.js"></script>
 <style>
+@font-face{font-family:"Geist Sans";src:url("../static/vendor/fonts/geist-sans-400.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"Geist Sans";src:url("../static/vendor/fonts/geist-sans-500.woff2") format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:"Geist Sans";src:url("../static/vendor/fonts/geist-sans-600.woff2") format("woff2");font-weight:600;font-display:swap}
+@font-face{font-family:"Geist Sans";src:url("../static/vendor/fonts/geist-sans-700.woff2") format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:"Geist Mono";src:url("../static/vendor/fonts/geist-mono-400.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"Geist Mono";src:url("../static/vendor/fonts/geist-mono-500.woff2") format("woff2");font-weight:500;font-display:swap}
 /* ══ TradingView dark tokens（取自 tv-dark.png 实测） ══ */
 :root{
   --bg:#131313;           /* chart/page base */
@@ -28,8 +35,8 @@
   --purple:#9c6dff;
   --amber:#ff9800;
   --tag-red:#f23645;
-  --sans:-apple-system,BlinkMacSystemFont,"Trebuchet MS",Roboto,"Microsoft YaHei","PingFang SC",sans-serif;
-  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  --sans:"Geist Sans",-apple-system,"Trebuchet MS","Microsoft YaHei","PingFang SC",sans-serif;
+  --mono:"Geist Mono",ui-monospace,Consolas,monospace;
   --ease:cubic-bezier(.2,.8,.2,1);
 }
 *{margin:0;padding:0;box-sizing:border-box}
@@ -211,30 +218,7 @@ kbd{font:10px var(--mono);background:var(--hover);border-radius:3px;padding:1px 
 <div id="shell">
 
   <!-- ═══ 顶栏 ═══ -->
-  <header id="topbar">
-    <button class="tbtn"><svg class="ic" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
-    <button class="tbtn" id="symBtn"><b id="symName">600519.SH</b><svg class="ic" style="width:12px" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
-    <button class="tbtn" title="添加对比标的"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
-    <button class="tbtn"><b>1D</b><svg class="ic" style="width:12px" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
-    <button class="tbtn" title="K线样式"><svg class="ic" viewBox="0 0 24 24"><path d="M8 6v12M16 6v12M6 8h4v8H6zM14 8h4v8h-4z"/></svg></button>
-    <button class="tbtn" id="indBtn"><svg class="ic" viewBox="0 0 24 24"><path d="M3 17l5-7 4 4 6-9 3 4"/></svg> 指标 <svg class="ic" style="width:12px" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
-    <button class="tbtn" title="警报"><svg class="ic" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M10 21a2 2 0 0 0 4 0"/></svg> 警报</button>
-    <button class="tbtn" title="回放"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/><path d="m10 9 5 3-5 3z" class="fill"/></svg> 回放</button>
-    <span class="sep"></span>
-    <button class="tbtn" title="撤销"><svg class="ic" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
-    <button class="tbtn" title="重做"><svg class="ic" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg></button>
-    <div class="right">
-      <button class="tbtn" title="图表布局"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg></button>
-      <button class="tbtn" id="saveBtn"><svg class="ic" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg> 保存 <svg class="ic" style="width:10px" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
-      <span class="sep"></span>
-      <div class="avatar"></div>
-      <button class="tbtn" title="帮助"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9.5a3 3 0 0 1 5.8 1c0 2-2.8 2.5-2.8 4"/><circle cx="12" cy="17.5" r=".5" class="fill"/></svg></button>
-      <button class="tbtn" title="通知"><svg class="ic" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M10 21a2 2 0 0 0 4 0"/></svg></button>
-      <button class="tbtn" title="快照"><svg class="ic" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
-      <button id="tradeBtn">交易面板</button>
-      <button id="upgBtn">模拟盘</button>
-    </div>
-  </header>
+  <header id="topbar"></header>
 
   <!-- ═══ 标的行 ═══ -->
   <div id="symline">
@@ -249,21 +233,7 @@ kbd{font:10px var(--mono);background:var(--hover);border-radius:3px;padding:1px 
 
   <!-- ═══ 主区 ═══ -->
   <div id="mid">
-    <nav id="rail">
-      <button data-t="cursor" class="on" title="十字光标"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="3"/></svg></button>
-      <button data-t="hline" title="水平线"><svg class="ic" viewBox="0 0 24 24"><path d="M4 12h16"/><path d="M12 8v8" opacity=".4"/></svg></button>
-      <button data-t="measure" title="测量"><svg class="ic" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="8" rx="1"/><path d="M8 8v3M12 8v3M16 8v3"/></svg></button>
-      <button data-t="trend" title="趋势线"><svg class="ic" viewBox="0 0 24 24"><path d="M4 19 19 5"/><circle cx="4" cy="19" r="1.6" class="fill"/><circle cx="19" cy="5" r="1.6" class="fill"/></svg></button>
-      <button disabled title="斐波那契（即将上线）"><svg class="ic" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16M9 3v18"/></svg></button>
-      <button disabled title="画刷（即将上线）"><svg class="ic" viewBox="0 0 24 24"><path d="m3 17 4-4c4-6 9-8 14-7-1 5-3 10-9 14l-4 4"/><path d="m9 15 4-4"/></svg></button>
-      <button disabled title="文本（即将上线）"><svg class="ic" viewBox="0 0 24 24"><path d="M5 7V5h14v2M12 5v14m-3 0h6"/></svg></button>
-      <div class="sep"></div>
-      <button id="magnet" title="磁吸"><svg class="ic" viewBox="0 0 24 24"><path d="M6 4v7a6 6 0 0 0 12 0V4"/><path d="M6 4h4v5H6zM14 4h4v5h-4z" class="fill"/></svg></button>
-      <button id="clr" title="删除全部画线"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 15h10l1-15M10 10v7M14 10v7"/></svg></button>
-      <div class="grow"></div>
-      <button title="隐藏画线"><svg class="ic" viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="3"/></svg></button>
-      <button title="锁定画线"><svg class="ic" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
-    </nav>
+    <nav id="rail"></nav>
 
     <div id="chartzone">
       <div id="legend">
@@ -300,16 +270,7 @@ kbd{font:10px var(--mono);background:var(--hover);border-radius:3px;padding:1px 
         </div>
         <div class="pane" id="p-decs" hidden></div>
       </div>
-      <nav id="rrail">
-        <button data-p="watch" class="on" title="自选列表"><svg class="ic" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg></button>
-        <button data-p="chat" title="AI 助手"><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H4l2-3a8 8 0 1 1 15-5z"/><path d="M9 11h.01M13 11h.01M17 11h.01"/></svg></button>
-        <button data-p="decs" title="决策流"><svg class="ic" viewBox="0 0 24 24"><path d="M22 12h-4l-3 8-6-16-3 8H2"/></svg></button>
-        <button title="警报（即将上线）"><svg class="ic" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M10 21a2 2 0 0 0 4 0"/></svg></button>
-        <button title="日历（即将上线）"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg></button>
-        <button title="热点（即将上线）"><svg class="ic" viewBox="0 0 24 24"><path d="M12 2c1 5-4 6-4 11a4 4 0 0 0 8 0c0-1-.5-2-1-3 3 1 5 3.5 5 6a7 7 0 1 1-14 0c0-5 5-8 6-14z"/></svg></button>
-        <div class="grow"></div>
-        <button title="设置"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12a7 7 0 0 0 .1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6A7 7 0 0 0 19 12z"/></svg></button>
-      </nav>
+      <nav id="rrail"></nav>
     </div>
   </div>
 
@@ -375,6 +336,65 @@ function genBars(sym){
 }
 const DATA={};Object.keys(SYMS).forEach(s=>DATA[s]=genBars(s));
 const DECS={"600519.SH":[{t:24,a:"BUY",ag:"quant",why:"MA5 上穿 MA20 金叉，RSI 52 未过热，建议底仓 10%。"},{t:64,a:"SELL",ag:"investor",why:"RSI 78 超买 + 顶背离，止盈一半。"},{t:115,a:"BUY",ag:"quant",why:"回踩 EMA20 企稳，缩量十字星，二次介入。"}],"300750.SZ":[{t:48,a:"BUY",ag:"quant",why:"突破年线压制，量价齐升。"}]};
+
+/* ═══ 真实 TV 图标渲染（提取自 tradingview.com DOM） ═══ */
+const CARET='<svg viewBox="0 0 16 8" width="9" height="6" style="margin-left:2px"><path d="m0 0 8 8 8-8z" fill="currentColor"/></svg>';
+const IC=(k)=>TV_ICONS[k]||"";
+function tb(icon,text,opts={}){return `<button class="tbtn${opts.on?" on":""}"${opts.id?` id="${opts.id}"`:""}${opts.title?` title="${opts.title}"`:""}${opts.dis?" disabled":""}>${icon?IC(icon):""}${text||""}${opts.caret?CARET:""}</button>`}
+document.getElementById("topbar").innerHTML=
+  tb("tb","","",'menu')+
+  `<button class="tbtn" id="symBtn"><b id="symName">600519.SH</b>${CARET}</button>`+
+  tb("tb_compare_symbols","","",'add compare')+
+  `<span class="cnt">00</span>`+
+  `<button class="tbtn"><b>1D</b>${CARET}</button>`+
+  tb("tb_candles","","",'chart type')+
+  `<button class="tbtn" id="indBtn">${IC("tb_indicators_metrics_and_strateg")} 指标 ${CARET}</button>`+
+  tb("tb_create_alert"," 警报")+
+  tb("tb_bar_replay"," 回放")+
+  `<span class="sep"></span>`+
+  tb("tb_undo","","",'undo')+tb("tb_redo","","",'redo')+
+  `<div class="right">`+
+  tb("tb_layout_setup","","",'layout')+
+  `<button class="tbtn" id="saveBtn">保存 ${CARET}</button>`+
+  `<span class="sep"></span><div class="avatar"></div>`+
+  tb("rrail_help","","",'help')+
+  tb("rrail_notifications","","",'notifications')+
+  `<button class="tbtn" title="快照"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>`+
+  `<button id="tradeBtn">交易面板</button><button id="upgBtn">模拟盘</button></div>`;
+document.getElementById("rail").innerHTML=
+  `<button data-t="cursor" class="on" title="十字光标">${IC("rail_cross")}</button>`+
+  `<button data-t="hline" title="水平线">${IC("rail_trendline")}</button>`+
+  `<button title="趋势线" data-t="trend">${IC("rail_fib_retracement")}</button>`+
+  `<button data-t="measure" title="测量">${IC("rail_measure")}</button>`+
+  `<button title="多头持仓" data-t="longpos">${IC("rail_long_position")}</button>`+
+  `<button title="画刷" data-t="brush">${IC("rail_brush")}</button>`+
+  `<button title="文本" data-t="text">${IC("rail_text")}</button>`+
+  `<button title="图标" data-t="icon">${IC("rail_icon")}</button>`+
+  `<div class="sep"></div>`+
+  `<button title="AI 区间分析" data-t="airange">${IC("rail_ai_range")}</button>`+
+  `<button title="放大" data-t="zoom">${IC("rail_zoom_in")}</button>`+
+  `<button id="magnet" title="磁吸 — 吸附最近 OHLC">${IC("rail_magnet_mode_snaps_drawings_pla")}</button>`+
+  `<button id="clr" title="删除全部画线">${IC("rail_geometric_shapes")}</button>`+
+  `<div class="grow"></div>`+
+  `<button title="隐藏画线">${IC("rail_cursors")}</button>`+
+  `<button title="锁定画线">${IC("tb_settings")}</button>`;
+document.getElementById("rrail").innerHTML=
+  `<button data-p="watch" class="on" title="自选 · 详情">${IC("rrail_watchlist_details_and_news")}</button>`+
+  `<button data-p="chat" title="AI Copilot">${IC("rrail_ai_copilot")}</button>`+
+  `<button data-p="decs" title="决策流 · 对象树">${IC("rrail_object_tree_and_data_window")}</button>`+
+  `<button title="警报（即将上线）">${IC("rrail_alerts")}</button>`+
+  `<button title="筛选器（即将上线）">${IC("rrail_screeners")}</button>`+
+  `<button title="策略编辑器（即将上线）">${IC("rrail_pine_editor")}</button>`+
+  `<button title="日历（即将上线）">${IC("rrail_calendars")}</button>`+
+  `<button title="社区（即将上线）">${IC("rrail_community")}</button>`+
+  `<div class="grow"></div>`+
+  `<button title="通知">${IC("rrail_notifications")}</button>`+
+  `<button title="帮助">${IC("rrail_help")}</button>`+
+  `<button title="设置">${IC("tb_settings")}</button>`;
+/* normalize extracted icon sizes */
+document.querySelectorAll("#topbar svg,#rail svg,#rrail svg").forEach(s=>{
+  s.setAttribute("width","18");s.setAttribute("height","18");s.style.color="inherit"});
+document.querySelectorAll("#rrail svg").forEach(s=>{s.setAttribute("width","17");s.setAttribute("height","17")});
 
 /* ═══ 图表 ═══ */
 let cur="600519.SH",tool="cursor",meas=[],hlines=[],trends=[],tpts=[];
