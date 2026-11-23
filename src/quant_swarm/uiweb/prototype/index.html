@@ -8,6 +8,10 @@
 <script src="../static/vendor/marked.min.js"></script>
 <script src="../static/vendor/purify.min.js"></script>
 <script src="./tv-icons.js"></script>
+<link rel="stylesheet" href="./fonts/misans/MiSans-Regular.min.css">
+<link rel="stylesheet" href="./fonts/misans/MiSans-Medium.min.css">
+<link rel="stylesheet" href="./fonts/misans/MiSans-Semibold.min.css">
+<link rel="stylesheet" href="./fonts/misans/MiSans-Bold.min.css">
 <style>
 @font-face{font-family:"Geist Sans";src:url("../static/vendor/fonts/geist-sans-400.woff2") format("woff2");font-weight:400;font-display:swap}
 @font-face{font-family:"Geist Sans";src:url("../static/vendor/fonts/geist-sans-500.woff2") format("woff2");font-weight:500;font-display:swap}
@@ -35,8 +39,8 @@
   --purple:#9c6dff;
   --amber:#ff9800;
   --tag-red:#f23645;
-  --sans:"Geist Sans",-apple-system,"Trebuchet MS","Microsoft YaHei","PingFang SC",sans-serif;
-  --mono:"Geist Mono",ui-monospace,Consolas,monospace;
+  --sans:"Geist Sans","MiSans",-apple-system,"Trebuchet MS","PingFang SC",sans-serif;
+  --mono:"Geist Mono","MiSans",ui-monospace,Consolas,monospace;
   --ease:cubic-bezier(.2,.8,.2,1);
 }
 *{margin:0;padding:0;box-sizing:border-box}
@@ -67,6 +71,27 @@ svg.fill{fill:currentColor;stroke:none}
 #upgBtn{background:var(--blue);color:#fff;font-size:12px;font-weight:700;border-radius:4px;padding:4px 12px}
 #upgBtn:hover{background:var(--blue-soft)}
 kbd{font:10px var(--mono);background:var(--hover);border-radius:3px;padding:1px 5px;color:var(--muted)}
+
+/* ══ 下拉菜单（TV 同款） ══ */
+.dmenu{position:fixed;z-index:80;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:5px;min-width:200px;box-shadow:0 10px 32px rgba(0,0,0,.6);animation:fadeIn .1s var(--ease)}
+.dmenu .mi{display:flex;align-items:center;gap:9px;padding:6px 10px;border-radius:5px;font-size:12.5px;color:var(--text2);cursor:pointer;white-space:nowrap}
+.dmenu .mi:hover{background:var(--hover);color:var(--text)}
+.dmenu .mi.on{color:var(--text)}
+.dmenu .mi .chk{width:14px;color:var(--blue);font-size:12px;flex:none}
+.dmenu .mi .kv{margin-left:auto;font-size:11px;color:var(--muted)}
+.dmenu .mi svg{width:15px;height:15px;color:var(--muted);flex:none}
+.dmenu .msec{padding:6px 10px 3px;font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.dmenu .msept{height:1px;background:var(--border-soft);margin:4px 6px}
+.dmenu .msrc{margin:4px 6px 6px;padding:5px 8px;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:12px;width:calc(100% - 12px);outline:none}
+#toast{position:fixed;bottom:46px;left:50%;transform:translateX(-50%);z-index:99;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:12.5px;color:var(--text);box-shadow:0 8px 24px rgba(0,0,0,.55);opacity:0;transition:opacity .18s;pointer-events:none}
+#toast.show{opacity:1}
+/* 通用面板行 */
+.gp-row{display:flex;align-items:center;gap:9px;padding:9px 14px;border-bottom:1px solid var(--border-soft);font-size:12.5px;cursor:pointer}
+.gp-row:hover{background:var(--hover)}
+.gp-sec{padding:10px 14px 4px;font-size:10.5px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.gp-btn{margin:12px 14px;display:block;width:calc(100% - 28px);padding:7px 0;text-align:center;background:var(--blue);color:#fff;border-radius:5px;font-size:12.5px;font-weight:600}
+.gp-btn:hover{background:var(--blue-soft)}
+.gp-sub{font-size:11px;color:var(--muted)}
 
 /* ══ 标的行 ══ */
 #symline{height:34px;display:flex;align-items:center;gap:10px;padding:0 10px;background:var(--bg);border-bottom:1px solid var(--border-soft)}
@@ -125,7 +150,8 @@ kbd{font:10px var(--mono);background:var(--hover);border-radius:3px;padding:1px 
 .ptabs .sp button{width:26px;height:26px;border-radius:4px;color:var(--muted)}
 .ptabs .sp button:hover{background:var(--hover);color:var(--text)}
 .pane{flex:1;overflow:auto;min-height:0}
-.pane[hidden]{display:none}
+.pane[hidden]{display:none!important}
+.pane.flexcol{display:flex;flex-direction:column}
 
 /* watchlist */
 .wl-head{display:flex;padding:7px 14px 5px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border-soft)}
@@ -251,9 +277,9 @@ kbd{font:10px var(--mono);background:var(--hover);border-radius:3px;padding:1px 
         <div class="ptabs">
           <span class="t" id="ptitle">自选</span>
           <div class="sp">
-            <button title="添加标的"><svg class="ic" style="width:15px" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
-            <button title="列表视图"><svg class="ic" style="width:15px" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></button>
-            <button title="更多"><svg class="ic" style="width:15px" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" class="fill"/><circle cx="12" cy="12" r="1.6" class="fill"/><circle cx="19" cy="12" r="1.6" class="fill"/></svg></button>
+            <button id="addSymBtn" title="添加标的"><svg class="ic" style="width:15px" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+            <button id="wlViewBtn" title="列表视图"><svg class="ic" style="width:15px" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></button>
+            <button id="wlMoreBtn" title="更多"><svg class="ic" style="width:15px" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" class="fill"/><circle cx="12" cy="12" r="1.6" class="fill"/><circle cx="19" cy="12" r="1.6" class="fill"/></svg></button>
           </div>
         </div>
         <div class="pane" id="p-watch">
@@ -261,7 +287,7 @@ kbd{font:10px var(--mono);background:var(--hover);border-radius:3px;padding:1px 
           <div id="wlist"></div>
           <div id="symcard"></div>
         </div>
-        <div class="pane" id="p-chat" hidden style="display:flex;flex-direction:column">
+        <div class="pane flexcol" id="p-chat" hidden>
           <div id="chatlog" style="flex:1;overflow:auto"></div>
           <div id="composer">
             <textarea id="cin" rows="1" placeholder="给 AI 派任务…"></textarea>
@@ -269,6 +295,7 @@ kbd{font:10px var(--mono);background:var(--hover);border-radius:3px;padding:1px 
           </div>
         </div>
         <div class="pane" id="p-decs" hidden></div>
+        <div class="pane" id="p-x" hidden></div>
       </div>
       <nav id="rrail"></nav>
     </div>
@@ -303,15 +330,16 @@ kbd{font:10px var(--mono);background:var(--hover);border-radius:3px;padding:1px 
     <button class="rng" data-r="6M" class="on">6M</button><button class="rng" data-r="YTD">YTD</button>
     <button class="rng" data-r="1Y" class="on">1Y</button><button class="rng" data-r="5Y">5Y</button>
     <button class="rng" data-r="All">全部</button>
-    <button class="rng" title="时间范围设置"><svg class="ic" style="width:13px" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12a7 7 0 0 0 .1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6A7 7 0 0 0 19 12z"/></svg></button>
+    <button class="rng" id="rngSetBtn" title="时间范围设置"><svg class="ic" style="width:13px" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12a7 7 0 0 0 .1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6A7 7 0 0 0 19 12z"/></svg></button>
     <div class="right">
       <span class="num" id="clock">--:--:-- UTC</span>
-      <button class="rng">复权</button>
+      <button class="rng" id="adjBtn">复权</button>
       <button class="kbtn" id="dockBtn">数据坞站 ▴</button>
     </div>
   </footer>
 </div>
 
+<div id="toast"></div>
 <!-- ⌘K -->
 <div id="cmdk"><div class="box">
   <input id="ckin" placeholder="搜索代码（600519 / 000001 / 茅台）">
@@ -342,24 +370,24 @@ const CARET='<svg viewBox="0 0 16 8" width="9" height="6" style="margin-left:2px
 const IC=(k)=>TV_ICONS[k]||"";
 function tb(icon,text,opts={}){return `<button class="tbtn${opts.on?" on":""}"${opts.id?` id="${opts.id}"`:""}${opts.title?` title="${opts.title}"`:""}${opts.dis?" disabled":""}>${icon?IC(icon):""}${text||""}${opts.caret?CARET:""}</button>`}
 document.getElementById("topbar").innerHTML=
-  tb("tb","","",'menu')+
+  `<button class="tbtn" id="menuBtn" title="菜单"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>`+
   `<button class="tbtn" id="symBtn"><b id="symName">600519.SH</b>${CARET}</button>`+
-  tb("tb_compare_symbols","","",'add compare')+
+  `<button class="tbtn" id="cmpBtn" title="添加对比">${IC("tb_compare_symbols")}</button>`+
   `<span class="cnt">00</span>`+
-  `<button class="tbtn"><b>1D</b>${CARET}</button>`+
-  tb("tb_candles","","",'chart type')+
+  `<button class="tbtn" id="tfBtn"><b>D</b>${CARET}</button>`+
+  `<button class="tbtn" id="ctBtn" title="K线样式">${IC("tb_candles")}</button>`+
   `<button class="tbtn" id="indBtn">${IC("tb_indicators_metrics_and_strateg")} 指标 ${CARET}</button>`+
-  tb("tb_create_alert"," 警报")+
-  tb("tb_bar_replay"," 回放")+
+  `<button class="tbtn" id="alertBtn">${IC("tb_create_alert")} 警报</button>`+
+  `<button class="tbtn" id="replayBtn">${IC("tb_bar_replay")} 回放</button>`+
   `<span class="sep"></span>`+
-  tb("tb_undo","","",'undo')+tb("tb_redo","","",'redo')+
+  `<button class="tbtn" id="undoBtn" title="撤销" disabled>${IC("tb_undo")}</button><button class="tbtn" id="redoBtn" title="重做" disabled>${IC("tb_redo")}</button>`+
   `<div class="right">`+
-  tb("tb_layout_setup","","",'layout')+
+  `<button class="tbtn" id="layoutBtn" title="图表布局">${IC("tb_layout_setup")}</button>`+
   `<button class="tbtn" id="saveBtn">保存 ${CARET}</button>`+
-  `<span class="sep"></span><div class="avatar"></div>`+
-  tb("rrail_help","","",'help')+
-  tb("rrail_notifications","","",'notifications')+
-  `<button class="tbtn" title="快照"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>`+
+  `<span class="sep"></span><div class="avatar" id="avatarBtn" style="cursor:pointer"></div>`+
+  `<button class="tbtn" id="helpBtn" title="帮助">${IC("rrail_help")}</button>`+
+  `<button class="tbtn" id="notifBtn" title="通知">${IC("rrail_notifications")}</button>`+
+  `<button class="tbtn" id="snapBtn" title="快照"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>`+
   `<button id="tradeBtn">交易面板</button><button id="upgBtn">模拟盘</button></div>`;
 document.getElementById("rail").innerHTML=
   `<button data-t="cursor" class="on" title="十字光标">${IC("rail_cross")}</button>`+
@@ -376,21 +404,22 @@ document.getElementById("rail").innerHTML=
   `<button id="magnet" title="磁吸 — 吸附最近 OHLC">${IC("rail_magnet_mode_snaps_drawings_pla")}</button>`+
   `<button id="clr" title="删除全部画线">${IC("rail_geometric_shapes")}</button>`+
   `<div class="grow"></div>`+
-  `<button title="隐藏画线">${IC("rail_cursors")}</button>`+
-  `<button title="锁定画线">${IC("tb_settings")}</button>`;
+  `<button id="hideBtn" title="隐藏画线">${IC("rail_cursors")}</button>`+
+  `<button id="lockBtn" title="锁定画线">${IC("tb_settings")}</button>`;
 document.getElementById("rrail").innerHTML=
-  `<button data-p="watch" class="on" title="自选 · 详情">${IC("rrail_watchlist_details_and_news")}</button>`+
-  `<button data-p="chat" title="AI Copilot">${IC("rrail_ai_copilot")}</button>`+
+  `<button data-p="watch" class="on" title="自选 · 详情 · 新闻">${IC("rrail_watchlist_details_and_news")}</button>`+
+  `<button data-p="alerts" title="警报">${IC("rrail_alerts")}</button>`+
   `<button data-p="decs" title="决策流 · 对象树">${IC("rrail_object_tree_and_data_window")}</button>`+
-  `<button title="警报（即将上线）">${IC("rrail_alerts")}</button>`+
-  `<button title="筛选器（即将上线）">${IC("rrail_screeners")}</button>`+
-  `<button title="策略编辑器（即将上线）">${IC("rrail_pine_editor")}</button>`+
-  `<button title="日历（即将上线）">${IC("rrail_calendars")}</button>`+
-  `<button title="社区（即将上线）">${IC("rrail_community")}</button>`+
+  `<button data-p="chat" title="AI Copilot">${IC("rrail_ai_copilot")}</button>`+
+  `<button data-p="screener" title="筛选器">${IC("rrail_screeners")}</button>`+
+  `<button data-p="pine" title="Pine 编辑器">${IC("rrail_pine_editor")}</button>`+
+  `<button data-p="cal" title="日历">${IC("rrail_calendars")}</button>`+
+  `<button data-p="comm" title="社区">${IC("rrail_community")}</button>`+
   `<div class="grow"></div>`+
-  `<button title="通知">${IC("rrail_notifications")}</button>`+
-  `<button title="帮助">${IC("rrail_help")}</button>`+
-  `<button title="设置">${IC("tb_settings")}</button>`;
+  `<button data-p="notif" title="通知">${IC("rrail_notifications")}</button>`+
+  `<button data-p="chats" title="聊天">${IC("rrail_chats")}</button>`+
+  `<button data-p="help" title="帮助">${IC("rrail_help")}</button>`+
+  `<button data-p="settings" title="设置">${IC("tb_settings")}</button>`;
 /* normalize extracted icon sizes */
 document.querySelectorAll("#topbar svg,#rail svg,#rrail svg").forEach(s=>{
   s.setAttribute("width","18");s.setAttribute("height","18");s.style.color="inherit"});
@@ -404,7 +433,7 @@ const TZ={layout:{background:{color:"#131313"},textColor:"#8c8c8c",fontFamily:'"
  timeScale:{borderColor:"#2a2a2a"},
  crosshair:{mode:0,vertLine:{color:"#4a4e5c",labelBackgroundColor:"#2a2a2a"},horzLine:{color:"#4a4e5c",labelBackgroundColor:"#2a2a2a"}}};
 const chart=LightweightCharts.createChart(document.getElementById("chart"),TZ);
-const candle=chart.addCandlestickSeries({upColor:"#089981",downColor:"#f23645",wickUpColor:"#089981",wickDownColor:"#f23645",borderVisible:false});
+let candle=chart.addCandlestickSeries({upColor:"#089981",downColor:"#f23645",wickUpColor:"#089981",wickDownColor:"#f23645",borderVisible:false});
 const ma20=chart.addLineSeries({color:"#2962ff",lineWidth:1,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
 const ma50=chart.addLineSeries({color:"#f0b90b",lineWidth:1,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
 const vol=chart.addHistogramSeries({priceScaleId:"vol",priceFormat:{type:"volume"},lastValueVisible:false});
@@ -498,13 +527,137 @@ document.getElementById("symBtn").onclick=openCmdk;
 cmdk.onclick=e=>{if(e.target===cmdk)closeCmdk()};
 window.onkeydown=e=>{if((e.metaKey||e.ctrlKey)&&e.key==="k"){e.preventDefault();openCmdk()}};
 
-/* ═══ 右坞 ═══ */
-const PT={watch:"自选",chat:"AI 助手",decs:"决策流"};
-document.querySelectorAll("#rrail button[data-p]").forEach(b=>b.onclick=()=>{
-  document.querySelectorAll("#rrail button[data-p]").forEach(x=>x.classList.toggle("on",x===b));
-  ["watch","chat","decs"].forEach(p=>document.getElementById("p-"+p).hidden=p!==b.dataset.p);
-  document.getElementById("ptitle").textContent=PT[b.dataset.p];
-  const p=document.getElementById("rpanel");if(p.style.width==="0px")p.style.width="330px"});
+/* ═══ 通用下拉菜单（TV 风） ═══ */
+function toast(t){const el=document.getElementById("toast");el.textContent=t;el.classList.add("show");
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove("show"),2200)}
+let _menu=null;
+function closeMenu(){if(_menu){_menu.remove();_menu=null}}
+document.addEventListener("mousedown",e=>{if(_menu&&!_menu.contains(e.target))closeMenu()});
+function menu(anchor,items,opts={}){
+  if(_menu){closeMenu();if(_menu._a===anchor)return;_menu=null}
+  const m=document.createElement("div");m.className="dmenu";m._a=anchor;
+  if(opts.search){const s=document.createElement("input");s.className="msrc";s.placeholder=opts.search;
+    s.oninput=()=>{m.querySelectorAll(".mi[data-t]").forEach(x=>x.style.display=x.dataset.t.toLowerCase().includes(s.value.toLowerCase())?"":"none")};m.appendChild(s)}
+  for(const it of items){
+    if(it==="sep"){const d=document.createElement("div");d.className="msept";m.appendChild(d);continue}
+    if(it.sec){const d=document.createElement("div");d.className="msec";d.textContent=it.sec;m.appendChild(d);continue}
+    const d=document.createElement("div");d.className="mi"+(it.on?" on":"");d.dataset.t=it.t||"";
+    d.innerHTML=`${it.icon?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">${it.icon}</svg>`:""}<span>${it.t}</span>${it.kv?`<span class="kv">${it.kv}</span>`:""}${it.check?`<span class="chk">${it.on?"✓":""}</span>`:""}`;
+    d.onclick=()=>{closeMenu();it.fn&&it.fn()};m.appendChild(d)}
+  document.body.appendChild(m);
+  const r=anchor.getBoundingClientRect();
+  let x=opts.right?r.right-m.offsetWidth:r.left,y=r.bottom+4;
+  m.style.left=Math.max(4,Math.min(x,innerWidth-m.offsetWidth-8))+"px";m.style.top=y+"px";
+  _menu=m;const s=m.querySelector(".msrc");if(s)setTimeout(()=>s.focus(),0)}
+
+/* ═══ 顶栏菜单数据（按真实 TV 结构） ═══ */
+const IC_PATH={line:'<path d="M3 17l6-6 4 4 8-8"/>',candle:'<rect x="7" y="8" width="10" height="9"/><path d="M12 4v4M12 17v3"/>',bar:'<path d="M7 4v16M7 9h-3M7 15h3M17 4v16M14 8h3M20 12h-3"/>',area:'<path d="M3 18l5-8 4 4 6-9 3 5v8z"/>'};
+let curTf="1D",curCt="K线图";
+function topMenus(){
+  document.getElementById("menuBtn").onclick=function(){menu(this,[
+    {t:"新建图表布局",fn:()=>toast("已创建新布局（mock）")},{t:"打开图表布局…",fn:()=>toast("布局管理（mock）")},"sep",
+    {t:"图表设置",fn:()=>openPanel("settings")},{t:"键盘快捷键",kv:"?"},{t:"关于 Quant$warm"}])};
+  document.getElementById("tfBtn").onclick=function(){menu(this,[
+    {sec:"分钟"},{t:"1 分钟",kv:"1",on:curTf==="1m",check:1,fn:()=>setTf("1m")},{t:"5 分钟",kv:"5",on:curTf==="5m",check:1,fn:()=>setTf("5m")},
+    {t:"15 分钟",kv:"15",on:curTf==="15m",check:1,fn:()=>setTf("15m")},{t:"30 分钟",kv:"30",on:curTf==="30m",check:1,fn:()=>setTf("30m")},
+    {t:"1 小时",kv:"1h",on:curTf==="1h",check:1,fn:()=>setTf("1h")},{sec:"日线以上"},
+    {t:"1 天",kv:"D",on:curTf==="1D",check:1,fn:()=>setTf("1D")},{t:"1 周",kv:"W",on:curTf==="1W",check:1,fn:()=>setTf("1W")},
+    {t:"1 月",kv:"M",on:curTf==="1M",check:1,fn:()=>setTf("1M")}])};
+  document.getElementById("ctBtn").onclick=function(){menu(this,[
+    {t:"K线图",icon:IC_PATH.candle,on:curCt==="K线图",check:1,fn:()=>setCt("K线图")},{t:"美国线",icon:IC_PATH.bar,on:curCt==="美国线",check:1,fn:()=>setCt("美国线")},
+    {t:"折线图",icon:IC_PATH.line,on:curCt==="折线图",check:1,fn:()=>setCt("折线图")},{t:"面积图",icon:IC_PATH.area,on:curCt==="面积图",check:1,fn:()=>setCt("面积图")},
+    {t:"基准线图",icon:IC_PATH.line,on:curCt==="基准线",check:1,fn:()=>setCt("基准线")},"sep",
+    {t:"Heikin Ashi",fn:()=>toast("HA 蜡烛 — 原型暂不支持")},{t:"空心K线",fn:()=>toast("空心K线 — 原型暂不支持")},
+    {t:"砖形图",fn:()=>toast("砖形图 — 原型暂不支持")},{t:"点数图",fn:()=>toast("点数图 — 原型暂不支持")}])};
+  document.getElementById("alertBtn").onclick=function(){const px=DATA[cur].at(-1).close;menu(this,[
+    {t:`在 ${fmtP(px)} 创建警报`,icon:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M10 21a2 2 0 0 0 4 0"/>',fn:()=>{ALERTS.push({s:cur,px,cond:"上穿",on:true});renderAlerts();toast(`已创建警报：${cur} 上穿 ${fmtP(px)}`);openPanel("alerts")}},
+    {t:"警报面板",fn:()=>openPanel("alerts")}])};
+  document.getElementById("replayBtn").onclick=function(){menu(this,[
+    {t:"从选中K线回放",fn:()=>toast("回放模式：选择起始K线（mock）")},{t:"快进 1 根",kv:"→"},{t:"退出回放",kv:"Esc"}])};
+  document.getElementById("layoutBtn").onclick=function(){menu(this,[
+    {t:"单图表",on:1,check:1},{t:"双图表 竖排"},{t:"双图表 横排"},{t:"四图表",fn:()=>toast("多图布局 — 原型暂不支持")}])};
+  document.getElementById("saveBtn").onclick=function(){menu(this,[
+    {t:"保存图表布局",kv:"Ctrl+S",fn:()=>toast("布局已保存（mock）")},{t:"另存为…"},{t:"重命名…"},"sep",
+    {t:"创建副本"},{t:"新建图表布局"},{t:"打开图表布局…"}])};
+  document.getElementById("avatarBtn").onclick=function(){menu(this,[
+    {t:"Quant$warm 用户",sec:"账户"},{t:"个人资料设置"},{t:"订阅: 模拟盘",kv:"Free"},"sep",{t:"深色主题",on:1,check:1},{t:"退出登录"}],{right:1})};
+  document.getElementById("helpBtn").onclick=function(){menu(this,[
+    {t:"帮助中心"},{t:"键盘快捷键",kv:"?"},{t:"提交功能请求"},{t:"更新日志"},"sep",{t:"关于 Quant$warm"}],{right:1})};
+  document.getElementById("notifBtn").onclick=function(){menu(this,[
+    {sec:"通知"},{t:"investor 完成了复盘任务",kv:"10:24",fn:()=>openPanel("notif")},{t:"600519.SH 触发价格预警",kv:"09:35",fn:()=>openPanel("notif")}],{right:1})};
+  document.getElementById("snapBtn").onclick=()=>{try{const cv=chart.takeScreenshot();const a=document.createElement("a");
+    a.href=cv.toDataURL("image/png");a.download=`QuantSwarm_${cur}_${Date.now()}.png`;a.click();toast("已保存截图")}catch(e){toast("截图失败")}};
+  document.getElementById("tradeBtn").onclick=()=>{const d=document.getElementById("bdock");if(d.style.height==="0px")document.getElementById("dockBtn").click();
+    document.querySelector('#bdock .b[data-b="fills"]').click()};
+  document.getElementById("upgBtn").onclick=function(){menu(this,[
+    {sec:"Paper Trading"},{t:"账户余额",kv:"¥1,000,000"},{t:"净值曲线",fn:()=>toast("权益曲线（mock）")},"sep",{t:"重置模拟账户",fn:()=>toast("账户已重置（mock）")}],{right:1})};
+}
+function setTf(t){curTf=t;document.getElementById("tfBtn").innerHTML=`<b>${t==="1D"?"D":t}</b>${CARET}`;toast(`周期切换为 ${t}（demo 仅日线数据）`)}
+function setCt(t){curCt=t;const type={K线图:"candlestick",美国线:"bar",折线图:"line",面积图:"area",基准线:"baseline"}[t];
+  if(!type){toast(t+" — 原型暂不支持");return}
+  const d=DATA[cur];
+  chart.removeSeries(candle);
+  candle=type==="candlestick"?chart.addCandlestickSeries({upColor:"#089981",downColor:"#f23645",wickUpColor:"#089981",wickDownColor:"#f23645",borderVisible:false})
+    :type==="bar"?chart.addBarSeries({upColor:"#089981",downColor:"#f23645"})
+    :type==="line"?chart.addLineSeries({color:"#2962ff",lineWidth:2})
+    :type==="area"?chart.addAreaSeries({lineColor:"#2962ff",topColor:"rgba(41,98,255,.35)",bottomColor:"rgba(41,98,255,.02)",lineWidth:2})
+    :chart.addBaselineSeries({topLineColor:"#089981",bottomLineColor:"#f23645",topFillColor1:"rgba(8,153,129,.28)",topFillColor2:"rgba(8,153,129,.05)",bottomFillColor1:"rgba(242,54,69,.05)",bottomFillColor2:"rgba(242,54,69,.28)",lineWidth:2});
+  candle.setData(type==="candlestick"||type==="bar"?d:d.map(b=>({time:b.time,value:b.close})));chart.timeScale().fitContent()}
+
+/* ═══ 右坞面板 ═══ */
+const ALERTS=[];
+function renderAlerts(){document.getElementById("p-x").innerHTML=
+  `<button class="gp-btn" id="mkAlert">+ 创建警报</button>`+
+  (ALERTS.length?ALERTS.map((a,i)=>`<div class="gp-row"><svg viewBox="0 0 24 24" class="ic" style="width:15px;color:${a.on?"var(--up)":"var(--muted)"}"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M10 21a2 2 0 0 0 4 0"/></svg>
+    <span><b>${a.s}</b> ${a.cond} <span class="num">${fmtP(a.px)}</span></span>
+    <span class="gp-sub" style="margin-left:auto">${a.on?"启用":"停用"}</span></div>`).join("")
+   :`<div class="gp-sec">无警报</div><div style="padding:6px 14px;font-size:12px;color:var(--muted)">价格到达设定值时，AI 会提醒并记入决策流。</div>`);
+  document.getElementById("mkAlert").onclick=()=>{const px=DATA[cur].at(-1).close;ALERTS.push({s:cur,px,cond:"上穿",on:true});renderAlerts();toast("警报已创建")};}
+const PANELS={
+  watch:{t:"自选",pane:"p-watch"},
+  chat:{t:"AI Copilot",pane:"p-chat"},
+  decs:{t:"对象树 · 决策流",pane:"p-decs"},
+  alerts:{t:"警报",render:renderAlerts},
+  screener:{t:"筛选器",render(){document.getElementById("p-x").innerHTML=
+    `<div class="gp-sec">热门筛选 · A股</div>`+["RSI 超卖","突破 20 日新高","放量上涨","均线金叉"].map(n=>
+    `<div class="gp-row"><span style="flex:1">${n}</span><span class="gp-sub">3 只</span></div>`).join("")+
+    `<div class="gp-sec">结果</div>`+["600519.SH","300750.SZ","000001.SZ"].map(s=>
+    `<div class="gp-row" data-s="${s}"><b>${s}</b><span class="num" style="margin-left:auto">${fmtP(DATA[s].at(-1).close)}</span></div>`).join("");
+    document.querySelectorAll("#p-x .gp-row[data-s]").forEach(r=>r.onclick=()=>pickSym(r.dataset.s))}},
+  pine:{t:"Pine 编辑器",render(){document.getElementById("p-x").innerHTML=
+    `<div class="gp-sec">策略脚本</div><div style="margin:0 14px"><textarea spellcheck="false" style="width:100%;height:150px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font:11px var(--mono);padding:8px;resize:vertical">//@version=5
+strategy("Quant$warm 双均线")
+fast = ta.ema(close, 20)
+slow = ta.ema(close, 50)
+plot(fast)  plot(slow)</textarea></div>
+    <button class="gp-btn" onclick="toast('已添加到图表（mock）')">添加到图表</button>`}},
+  cal:{t:"财经日历",render(){document.getElementById("p-x").innerHTML=
+    `<div class="gp-sec">本周</div>`+[["11-24 09:30","PMI 初值","高"],["11-25 15:00","贵州茅台 分红除权","中"],["11-27 09:30","工业企业利润","高"],["11-28 02:00","美联储纪要","中"]].map(([t,n,lv])=>
+    `<div class="gp-row"><span class="num gp-sub" style="width:76px">${t}</span><span style="flex:1">${n}</span><span class="bdg ${lv==="高"?"b-sell":"b-mut"}">${lv}</span></div>`).join("")}},
+  comm:{t:"社区观点",render(){document.getElementById("p-x").innerHTML=
+    `<div class="gp-sec">热门观点</div>`+[["酱香科技观察员","茅台三季度渠道库存分析","👍 128"],["量化老手","宁德时代的量价结构解读","👍 96"],["趋势为王","A股周线级别反弹窗口","👍 74"]].map(([a,t,l])=>
+    `<div class="gp-row"><div style="flex:1"><div style="font-size:12.5px">${t}</div><div class="gp-sub">${a} · ${l}</div></div></div>`).join("")}},
+  notif:{t:"通知",render(){document.getElementById("p-x").innerHTML=
+    ["investor 完成了昨夜复盘","600519.SH 触及 EMA20 支撑","风控: 单票仓位接近上限","learner 发布 quant.md 更新"].map(n=>`<div class="gp-row">${n}</div>`).join("")}},
+  chats:{t:"聊天",render(){document.getElementById("p-x").innerHTML=
+    ["Quant$warm 内部频道","A股策略讨论组","investor × quant 会签室"].map(n=>`<div class="gp-row"><span style="flex:1">${n}</span><span class="gp-sub">›</span></div>`).join("")}},
+  help:{t:"帮助",render(){document.getElementById("p-x").innerHTML=
+    [["⌘K","全局标的搜索"],["/","打开搜索"],["Alt+R","重置图表"],["Esc","关闭菜单/弹层"]].map(([k,d])=>
+    `<div class="gp-row"><kbd>${k}</kbd><span style="margin-left:10px">${d}</span></div>`).join("")+`<div class="gp-sec">Quant$warm Terminal · 原型 v3</div>`}},
+  settings:{t:"图表设置",render(){document.getElementById("p-x").innerHTML=
+    `<div class="gp-sec">图表</div>`+[["网格线",true],["十字光标磁吸",false],["显示成交量",true],["K线空心模式",false]].map(([n,on])=>
+    `<div class="gp-row"><span style="flex:1">${n}</span><span class="bdg ${on?"b-buy":"b-mut"}">${on?"开":"关"}</span></div>`).join("")+
+    `<div class="gp-sec">外观</div><div class="gp-row"><span style="flex:1">主题</span><span class="gp-sub">深色 ▾</span></div>`}},
+};
+function openPanel(k){
+  const p=PANELS[k];if(!p)return;
+  document.querySelectorAll("#rrail button[data-p]").forEach(x=>x.classList.toggle("on",x.dataset.p===k));
+  ["watch","chat","decs"].forEach(q=>document.getElementById("p-"+q).hidden=true);
+  document.getElementById("p-x").hidden=true;
+  if(p.pane)document.getElementById(p.pane).hidden=false;else p.render(),document.getElementById("p-x").hidden=false;
+  document.getElementById("ptitle").textContent=p.t;
+  const rp=document.getElementById("rpanel");if(rp.style.width==="0px")rp.style.width="330px"}
+document.querySelectorAll("#rrail button[data-p]").forEach(b=>b.onclick=()=>openPanel(b.dataset.p));
 document.getElementById("dockBtn").onclick=()=>{
   const d=document.getElementById("bdock"),btn=document.getElementById("dockBtn");
   const open=d.style.height!=="0px"&&d.style.height!=="";
@@ -633,6 +786,21 @@ document.getElementById("b-learn").innerHTML=`<table style="width:100%;border-co
 
 /* ═══ init ═══ */
 document.getElementById("rszB").style.display="none";
+topMenus();
+document.getElementById("cmpBtn").onclick=function(){menu(this,
+  Object.keys(SYMS).filter(s=>s!==cur).map(s=>({t:`${s} ${SYMS[s]}`,fn:()=>toast(`已叠加 ${s}（mock）`)})))};
+document.getElementById("magnet").onclick=function(){this.classList.toggle("on");toast(this.classList.contains("on")?"磁吸已开启":"磁吸已关闭")};
+document.getElementById("hideBtn").onclick=function(){this.classList.toggle("on");toast(this.classList.contains("on")?"画线已隐藏":"画线已显示")};
+document.getElementById("lockBtn").onclick=function(){this.classList.toggle("on");toast(this.classList.contains("on")?"画线已锁定":"画线已解锁")};
+document.getElementById("addSymBtn").onclick=openCmdk;
+document.getElementById("wlViewBtn").onclick=function(){this.classList.toggle("on");toast("视图切换（mock）")};
+document.getElementById("wlMoreBtn").onclick=function(){menu(this,[
+  {t:"按涨幅排序",fn:()=>toast("已排序")},{t:"按成交量排序",fn:()=>toast("已排序")},"sep",
+  {t:"导入自选…"},{t:"导出自选",fn:()=>toast("已导出（mock）")}])};
+document.getElementById("rngSetBtn").onclick=function(){menu(this,[
+  {t:"常用范围",sec:"显示"},{t:"1D/5D/1M/3M/6M",check:1,on:1},{t:"YTD/1Y/5Y/全部",check:1,on:1},"sep",{t:"自定义范围…"}])};
+document.getElementById("adjBtn").onclick=function(){menu(this,[
+  {t:"不复权",check:1,on:1},{t:"前复权",check:1},{t:"后复权",check:1}],{right:1})};
 load(cur);renderDecs();
 new ResizeObserver(()=>{const w=document.getElementById("chartzone");
   chart.resize(w.clientWidth,w.clientHeight)}).observe(document.getElementById("chartzone"));
