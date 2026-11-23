@@ -40,7 +40,3 @@
 - [ ] 右图标轨切面板、底坞开合顺畅
 - [ ] 画线/测量/标记/搜索/聊天全链路可用
 
-
-> 图表为中心、AI 嵌入的多智能体量化终端。原型：`src/quant_swarm/uiweb/prototype/index.html`
-> 参照系：TradingView（布局/图表交互）、Linear（面板/徽标语义）、Telegram Desktop（对话密度）、Notion（命令面板）。
-
