@@ -58,3 +58,4 @@ src/quant_swarm/uiweb/frontend/tsconfig.tsbuildinfo
 tv-mirror/*.pem
 tv-mirror/*.tradingview.com/
 tv-mirror/*.log
+tv-mirror/api/
